@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ulink Assist | Pre-Claim Assessment</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    :root {
+      --teal: rgb(60,170,170);
+      --teal-dark: rgb(40,130,130);
+      --teal-light: rgba(60,170,170,0.15);
+      --orange: rgb(220,90,30);
+      --orange-light: rgba(220,90,30,0.15);
+      --dark: rgb(60,60,60);
+      --bg: #0f1117;
+      --surface: #181c27;
+      --surface2: #1e2334;
+      --border: rgba(60,170,170,0.25);
+      --text: #e8ecf4;
+      --text-muted: #8892a4;
+      --radius: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      padding-bottom: 60px;
+    }
+
+    /* ── TOP NAV ── */
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(8px);
+    }
+    .topbar img {
+      height: 44px;
+      object-fit: contain;
+      border-radius: 6px;
+    }
+    .topbar-title {
+      display: flex;
+      flex-direction: column;
+    }
+    .topbar-title span:first-child {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--teal);
+      letter-spacing: 0.03em;
+    }
+    .topbar-title span:last-child {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+    .topbar-badge {
+      margin-left: auto;
+      background: var(--teal-light);
+      border: 1px solid var(--border);
+      color: var(--teal);
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── HERO BANNER ── */
+    .hero {
+      background: linear-gradient(135deg, rgb(40,130,130) 0%, rgb(20,80,80) 60%, #0f1117 100%);
+      padding: 36px 32px 30px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      right: -60px; top: -60px;
+      width: 280px; height: 280px;
+      background: radial-gradient(circle, rgba(220,90,30,0.18) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .hero h1 {
+      font-size: 1.7rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+    .hero h1 span { color: var(--orange); }
+    .hero p {
+      margin-top: 8px;
+      color: rgba(255,255,255,0.65);
+      font-size: 0.88rem;
+      max-width: 520px;
+    }
+
+    /* ── MAIN LAYOUT ── */
+    .container {
+      max-width: 860px;
+      margin: 32px auto;
+      padding: 0 20px;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 30px;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .card-num {
+      width: 28px; height: 28px;
+      background: var(--teal);
+      color: #fff;
+      border-radius: 50%;
+      font-size: 0.78rem;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* ── FORM FIELDS ── */
+    .form-grid {
+      display: grid;
+      gap: 16px;
+    }
+    .form-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+    .form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+    .field label {
+      display: block;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 6px;
+    }
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.88rem;
+      padding: 10px 14px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(60,170,170,0.15);
+    }
+    .field textarea {
+      resize: vertical;
+      min-height: 100px;
+      line-height: 1.55;
+    }
+    .field select option { background: #1e2334; }
+
+    /* ── NECESSITY TABLE ── */
+    .necessity-table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .necessity-table thead tr {
+      background: var(--teal);
+    }
+    .necessity-table thead th {
+      padding: 10px 14px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #fff;
+      text-align: left;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .necessity-table tbody tr:nth-child(odd) { background: var(--surface2); }
+    .necessity-table tbody tr:nth-child(even) { background: #161a24; }
+    .necessity-table tbody td { padding: 8px 10px; }
+    .necessity-table tbody td input,
+    .necessity-table tbody td textarea {
+      width: 100%;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.84rem;
+      padding: 7px 10px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .necessity-table tbody td input:focus,
+    .necessity-table tbody td textarea:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 2px rgba(60,170,170,0.15);
+    }
+    .necessity-table tbody td textarea { min-height: 56px; resize: vertical; }
+    .row-label {
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--teal);
+      padding-right: 6px;
+      white-space: nowrap;
+    }
+
+    /* ── GENERATE BUTTON ── */
+    .btn-generate {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 16px 28px;
+      background: linear-gradient(135deg, var(--teal-dark), var(--teal));
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: transform 0.15s, box-shadow 0.2s, filter 0.2s;
+      box-shadow: 0 4px 20px rgba(60,170,170,0.35);
+      margin-top: 10px;
+    }
+    .btn-generate:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(60,170,170,0.45);
+      filter: brightness(1.08);
+    }
+    .btn-generate:active { transform: translateY(0); }
+    .btn-generate svg { flex-shrink: 0; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed;
+      bottom: 30px; right: 30px;
+      background: var(--surface);
+      border: 1px solid var(--teal);
+      color: var(--text);
+      padding: 14px 22px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+      display: none;
+      z-index: 9999;
+      animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* ── FOOTER INFO ── */
+    .footer-info {
+      text-align: center;
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 640px) {
+      .form-grid.cols-2, .form-grid.cols-3 { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <img id="nav-logo" src="ulink-logo.png" alt="Ulink Assist Logo" onerror="this.style.display='none'"/>
+  <div class="topbar-title">
+    <span>Ulink Assist</span>
+    <span>Singapore Insurance TPA</span>
+  </div>
+  <div class="topbar-badge">Pre-Claim Tool</div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Pre-Claim <span>Assessment</span> Report Generator</h1>
+  <p>Complete the form below to generate a professional PDF assessment report. All processing is done locally — no data leaves your device.</p>
+</div>
+
+<!-- FORM -->
+<div class="container">
+
+  <!-- CASE INFORMATION -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-num">0</div>
+      <div class="card-title">Case Information</div>
+    </div>
+    <div class="form-grid cols-2">
+      <div class="field">
+        <label>Report Date</label>
+        <input type="date" id="f_date"/>
+      </div>
+      <div class="field">
+        <label>Hospital Type</label>
+        <select id="f_hospital_type">
+          <option value="Private">Private</option>
+          <option value="Public">Public</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Hospital Name</label>
+        <input type="text" id="f_hospital" placeholder="e.g. Mount Elizabeth Novena"/>
+      </div>
+      <div class="field">
+        <label>Condition / Diagnosis</label>
+        <input type="text" id="f_condition" placeholder="e.g. Lumbar Disc Herniation"/>
+      </div>
+      <div class="field" style="grid-column: 1 / -1">
+        <label>Proposed Procedure</label>
+        <input type="text" id="f_procedure" placeholder="e.g. L4-L5 Microdiscectomy"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 1 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-num">1</div>
+      <div class="card-title">General Exclusion Check</div>
+    </div>
+    <div class="field">
+      <label>Exclusion Assessment Remarks</label>
+      <textarea id="s1" rows="5" placeholder="Describe any applicable policy exclusions, waiting periods, or eligibility concerns..."></textarea>
+    </div>
+  </div>
+
+  <!-- SECTION 2 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-num">2</div>
+      <div class="card-title">Medical Necessity Assessment</div>
+    </div>
+    <table class="necessity-table">
+      <thead>
+        <tr>
+          <th style="width:22%">Outcome</th>
+          <th style="width:20%">Likelihood %</th>
+          <th>Reasoning</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><input type="text" id="s2_1_outcome" placeholder="e.g. Full Recovery"/></td>
+          <td><input type="text" id="s2_1_likelihood" placeholder="e.g. 75%"/></td>
+          <td><textarea id="s2_1_reasoning" placeholder="Clinical justification..."></textarea></td>
+        </tr>
+        <tr>
+          <td><input type="text" id="s2_2_outcome" placeholder="e.g. Partial Recovery"/></td>
+          <td><input type="text" id="s2_2_likelihood" placeholder="e.g. 20%"/></td>
+          <td><textarea id="s2_2_reasoning" placeholder="Clinical justification..."></textarea></td>
+        </tr>
+        <tr>
+          <td><input type="text" id="s2_3_outcome" placeholder="e.g. No Improvement"/></td>
+          <td><input type="text" id="s2_3_likelihood" placeholder="e.g. 5%"/></td>
+          <td><textarea id="s2_3_reasoning" placeholder="Clinical justification..."></textarea></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 3 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-num">3</div>
+      <div class="card-title">Pre-Existing Condition (PEC) Assessment</div>
+    </div>
+    <div class="field">
+      <label>PEC Remarks</label>
+      <textarea id="s3" rows="5" placeholder="Document any pre-existing conditions, their relevance to the current claim, and applicable policy provisions..."></textarea>
+    </div>
+  </div>
+
+  <!-- SECTION 4 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-num">4</div>
+      <div class="card-title">Reasonable & Customary (R&C) Cost Estimate</div>
+    </div>
+    <div class="field">
+      <label>R&C Estimate Details</label>
+      <textarea id="s4" rows="5" placeholder="Provide the R&C cost benchmarks, proposed billing amounts, and any deviation analysis..."></textarea>
+    </div>
+  </div>
+
+  <!-- SECTION 5 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-num">5</div>
+      <div class="card-title">Letter of Guarantee (LOG) Recommendation</div>
+    </div>
+    <div class="field">
+      <label>LOG Recommendation</label>
+      <textarea id="s5" rows="5" placeholder="State the LOG recommendation, approved amount, conditions, and any remarks to the hospital or insurer..."></textarea>
+    </div>
+  </div>
+
+  <!-- GENERATE BUTTON -->
+  <button class="btn-generate" onclick="generatePDF()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 15V3m0 12l-4-4m4 4l4-4"/><rect x="3" y="17" width="18" height="4" rx="2"/>
+    </svg>
+    Generate &amp; Download PDF
+  </button>
+
+  <div class="footer-info">
+    Ulink Assist Pre-Claim Assessment Tool &nbsp;|&nbsp; www.ulinkassist.com &nbsp;|&nbsp; All data processed locally on your device
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  // ── Auto-fill today's date ──
+  (function () {
+    const d = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    document.getElementById('f_date').value =
+      `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  })();
+
+  // ── Logo base64 loader ──
+  let logoBase64 = null;
+  (async function () {
+    try {
+      const resp = await fetch('ulink-logo.png');
+      if (!resp.ok) throw new Error('not found');
+      const blob = await resp.blob();
+      const reader = new FileReader();
+      reader.onload = e => { logoBase64 = e.target.result; };
+      reader.readAsDataURL(blob);
+    } catch (_) { /* logo not available — will be skipped in PDF */ }
+  })();
+
+  // ── Toast helper ──
+  function showToast(msg, color='var(--teal)') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    t.style.borderColor = color;
+    t.style.animation = 'none';
+    void t.offsetWidth;
+    t.style.animation = 'slideUp 0.3s ease';
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => { t.style.display = 'none'; }, 4000);
+  }
+
+  // ── PDF Colors ──
+  const TEAL   = [60, 170, 170];
+  const ORANGE = [220, 90, 30];
+  const DARK   = [60, 60, 60];
+  const LGRAY  = [235, 238, 242];
+  const MGRAY  = [200, 208, 218];
+
+  // ── Text wrapper for jsPDF ──
+  function wrapText(doc, text, x, y, maxW, lineH, pageH, headerH, footerH, drawHeaderFn, drawFooterFn, pageNum) {
+    const lines = doc.splitTextToSize(text||'', maxW);
+    for (let i = 0; i < lines.length; i++) {
+      if (y + lineH > pageH - footerH - 6) {
+        drawFooterFn(doc, pageNum[0]);
+        doc.addPage();
+        pageNum[0]++;
+        drawHeaderFn(doc);
+        drawFooterFn(doc, pageNum[0]);
+        y = headerH + 12;
+      }
+      doc.text(lines[i], x, y);
+      y += lineH;
+    }
+    return y;
+  }
+
+  // ── Main generate function ──
+  async function generatePDF() {
+    const { jsPDF } = window.jspdf;
+
+    // Gather values
+    const rawDate    = document.getElementById('f_date').value;
+    const hospital   = document.getElementById('f_hospital').value.trim() || '—';
+    const hosType    = document.getElementById('f_hospital_type').value;
+    const condition  = document.getElementById('f_condition').value.trim() || '—';
+    const procedure  = document.getElementById('f_procedure').value.trim() || '—';
+    const s1         = document.getElementById('s1').value.trim() || '—';
+    const s2rows     = [
+      { out: document.getElementById('s2_1_outcome').value.trim(),    pct: document.getElementById('s2_1_likelihood').value.trim(),    rsn: document.getElementById('s2_1_reasoning').value.trim() },
+      { out: document.getElementById('s2_2_outcome').value.trim(),    pct: document.getElementById('s2_2_likelihood').value.trim(),    rsn: document.getElementById('s2_2_reasoning').value.trim() },
+      { out: document.getElementById('s2_3_outcome').value.trim(),    pct: document.getElementById('s2_3_likelihood').value.trim(),    rsn: document.getElementById('s2_3_reasoning').value.trim() },
+    ];
+    const s3 = document.getElementById('s3').value.trim() || '—';
+    const s4 = document.getElementById('s4').value.trim() || '—';
+    const s5 = document.getElementById('s5').value.trim() || '—';
+
+    // Format date for display
+    let displayDate = rawDate;
+    if (rawDate) {
+      const [y,m,d] = rawDate.split('-');
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      displayDate = `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
+    }
+
+    // PDF setup
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW  = 210;
+    const pageH  = 297;
+    const marginL = 16;
+    const marginR = 16;
+    const contentW = pageW - marginL - marginR;
+    const headerH = 22;
+    const footerH = 12;
+    const pageNum  = [1];
+
+    // ── Draw Header ──
+    function drawHeader(d) {
+      d.setFillColor(...TEAL);
+      d.rect(0, 0, pageW, headerH, 'F');
+
+      // Logo
+      if (logoBase64) {
+        try { d.addImage(logoBase64, 'PNG', pageW - 38, 2, 18, 18); } catch(_){}
+      }
+
+      d.setFont('helvetica', 'bold');
+      d.setFontSize(10);
+      d.setTextColor(255,255,255);
+      d.text('Ulink Assist  |  Pre-Claim Assessment Report', marginL, 14);
+    }
+
+    // ── Draw Footer ──
+    function drawFooter(d, pn) {
+      d.setFillColor(...TEAL);
+      d.rect(0, pageH - footerH, pageW, footerH, 'F');
+      d.setFont('helvetica', 'normal');
+      d.setFontSize(7.5);
+      d.setTextColor(255,255,255);
+      d.text('Ulink Assist Pre-Claim Assessment  |  www.ulinkassist.com', marginL, pageH - 4.5);
+      d.text(`Page ${pn}`, pageW - marginR, pageH - 4.5, { align:'right' });
+    }
+
+    // ── Section heading helper ──
+    function sectionHead(d, label, yRef) {
+      let y = yRef;
+      d.setFont('helvetica', 'bold');
+      d.setFontSize(10.5);
+      d.setTextColor(...TEAL);
+      d.text(label, marginL, y);
+      y += 2;
+      d.setDrawColor(...TEAL);
+      d.setLineWidth(0.5);
+      d.line(marginL, y, pageW - marginR, y);
+      return y + 6;
+    }
+
+    // ── Body text helper ──
+    function bodyText(d, text, x, yRef) {
+      d.setFont('helvetica', 'normal');
+      d.setFontSize(9);
+      d.setTextColor(...DARK);
+      return wrapText(d, text, x, yRef, contentW - (x - marginL), 5, pageH, headerH, footerH, drawHeader, drawFooter, pageNum);
+    }
+
+    // ==================
+    // PAGE 1
+    // ==================
+    drawHeader(doc);
+    drawFooter(doc, pageNum[0]);
+
+    let y = headerH + 10;
+
+    // ── Orange title ──
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(15);
+    doc.setTextColor(...ORANGE);
+    doc.text('Pre-Claim Assessment Summary', marginL, y);
+    y += 3;
+    doc.setDrawColor(...ORANGE);
+    doc.setLineWidth(0.8);
+    doc.line(marginL, y, pageW - marginR, y);
+    y += 7;
+
+    // ── Date right-aligned ──
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(120, 130, 145);
+    doc.text(`Date: ${displayDate}`, pageW - marginR, y, { align:'right' });
+    y += 6;
+
+    // ── Case info box ──
+    const boxH = 28;
+    doc.setFillColor(...LGRAY);
+    doc.setDrawColor(...MGRAY);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(marginL, y, contentW, boxH, 2, 2, 'FD');
+
+    const colA = marginL + 5;
+    const colB = marginL + contentW / 2;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(100,110,125);
+    doc.text('HOSPITAL', colA, y + 7);
+    doc.text('HOSPITAL TYPE', colB, y + 7);
+    doc.text('CONDITION / DIAGNOSIS', colA, y + 18);
+    doc.text('PROPOSED PROCEDURE', colB, y + 18);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(...DARK);
+    doc.text(hospital, colA, y + 13);
+    doc.text(hosType, colB, y + 13);
+    // Truncate long text if needed
+    const condTxt = doc.splitTextToSize(condition, contentW/2 - 8)[0] || condition;
+    const procTxt = doc.splitTextToSize(procedure, contentW/2 - 8)[0] || procedure;
+    doc.text(condTxt, colA, y + 24);
+    doc.text(procTxt, colB, y + 24);
+
+    y += boxH + 10;
+
+    // ==================
+    // SECTION 1
+    // ==================
+    y = sectionHead(doc, 'Section 1: General Exclusion Check', y);
+    y = bodyText(doc, s1, marginL, y);
+    y += 8;
+
+    // ==================
+    // SECTION 2 — TABLE
+    // ==================
+    // Check if we need a new page
+    if (y + 60 > pageH - footerH - 8) {
+      drawFooter(doc, pageNum[0]);
+      doc.addPage();
+      pageNum[0]++;
+      drawHeader(doc);
+      drawFooter(doc, pageNum[0]);
+      y = headerH + 12;
+    }
+
+    y = sectionHead(doc, 'Section 2: Medical Necessity Assessment', y);
+
+    // Table header
+    const col1W = 50, col2W = 28, col3W = contentW - col1W - col2W;
+    const tblX = marginL;
+    const rowH = 7;
+
+    doc.setFillColor(...TEAL);
+    doc.rect(tblX, y, contentW, rowH, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(255,255,255);
+    doc.text('Outcome', tblX + 3, y + 5);
+    doc.text('Likelihood %', tblX + col1W + 3, y + 5);
+    doc.text('Reasoning', tblX + col1W + col2W + 3, y + 5);
+    y += rowH;
+
+    // Table rows
+    s2rows.forEach((row, idx) => {
+      // Compute row height based on reasoning text
+      doc.setFontSize(8.5);
+      const rsnLines = doc.splitTextToSize(row.rsn || '—', col3W - 6);
+      const dynRowH = Math.max(10, rsnLines.length * 4.5 + 5);
+
+      // Page break check
+      if (y + dynRowH > pageH - footerH - 8) {
+        drawFooter(doc, pageNum[0]);
+        doc.addPage();
+        pageNum[0]++;
+        drawHeader(doc);
+        drawFooter(doc, pageNum[0]);
+        y = headerH + 12;
+        // Redraw header row
+        doc.setFillColor(...TEAL);
+        doc.rect(tblX, y, contentW, rowH, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(255,255,255);
+        doc.text('Outcome', tblX + 3, y + 5);
+        doc.text('Likelihood %', tblX + col1W + 3, y + 5);
+        doc.text('Reasoning', tblX + col1W + col2W + 3, y + 5);
+        y += rowH;
+      }
+
+      const bg = idx % 2 === 0 ? [255,255,255] : LGRAY;
+      doc.setFillColor(...bg);
+      doc.rect(tblX, y, contentW, dynRowH, 'F');
+
+      // Cell borders
+      doc.setDrawColor(...MGRAY);
+      doc.setLineWidth(0.2);
+      doc.line(tblX + col1W, y, tblX + col1W, y + dynRowH);
+      doc.line(tblX + col1W + col2W, y, tblX + col1W + col2W, y + dynRowH);
+      doc.rect(tblX, y, contentW, dynRowH);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(...DARK);
+      doc.text(row.out || '—', tblX + 3, y + 6);
+      doc.text(row.pct || '—', tblX + col1W + 3, y + 6);
+
+      // Reasoning with wrap
+      rsnLines.forEach((ln, li) => {
+        doc.text(ln, tblX + col1W + col2W + 3, y + 6 + li * 4.5);
+      });
+
+      y += dynRowH;
+    });
+
+    y += 9;
+
+    // ==================
+    // SECTION 3
+    // ==================
+    if (y + 40 > pageH - footerH - 8) {
+      drawFooter(doc, pageNum[0]);
+      doc.addPage();
+      pageNum[0]++;
+      drawHeader(doc);
+      drawFooter(doc, pageNum[0]);
+      y = headerH + 12;
+    }
+    y = sectionHead(doc, 'Section 3: Pre-Existing Condition (PEC) Assessment', y);
+    y = bodyText(doc, s3, marginL, y);
+    y += 8;
+
+    // ==================
+    // SECTION 4
+    // ==================
+    if (y + 40 > pageH - footerH - 8) {
+      drawFooter(doc, pageNum[0]);
+      doc.addPage();
+      pageNum[0]++;
+      drawHeader(doc);
+      drawFooter(doc, pageNum[0]);
+      y = headerH + 12;
+    }
+    y = sectionHead(doc, 'Section 4: Reasonable & Customary (R&C) Cost Estimate', y);
+    y = bodyText(doc, s4, marginL, y);
+    y += 8;
+
+    // ==================
+    // SECTION 5
+    // ==================
+    if (y + 40 > pageH - footerH - 8) {
+      drawFooter(doc, pageNum[0]);
+      doc.addPage();
+      pageNum[0]++;
+      drawHeader(doc);
+      drawFooter(doc, pageNum[0]);
+      y = headerH + 12;
+    }
+    y = sectionHead(doc, 'Section 5: Letter of Guarantee (LOG) Recommendation', y);
+    y = bodyText(doc, s5, marginL, y);
+    y += 10;
+
+    // ==================
+    // DISCLAIMER
+    // ==================
+    if (y + 40 > pageH - footerH - 8) {
+      drawFooter(doc, pageNum[0]);
+      doc.addPage();
+      pageNum[0]++;
+      drawHeader(doc);
+      drawFooter(doc, pageNum[0]);
+      y = headerH + 12;
+    }
+
+    // Orange disclaimer heading
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(...ORANGE);
+    doc.text('Disclaimer', marginL, y);
+    y += 5;
+
+    const disclaimerText =
+      'This Pre-Claim Assessment Report is prepared by Ulink Assist Pte. Ltd. solely for the purpose of assisting the insurer in evaluating a pre-authorisation request. ' +
+      'The recommendations and estimates contained herein are based on information available at the time of assessment and do not constitute a guarantee of coverage, payment, or insurer approval. ' +
+      'Final coverage decisions remain the sole prerogative of the relevant insurer. Policy terms, conditions, and exclusions shall always prevail. ' +
+      'This document is strictly confidential and intended for the designated recipient only. Unauthorised disclosure, copying, or distribution is prohibited. ' +
+      'Ulink Assist Pte. Ltd. accepts no liability for decisions made solely on the basis of this report.';
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.8);
+    doc.setTextColor(100, 110, 125);
+    const disLines = doc.splitTextToSize(disclaimerText, contentW);
+    disLines.forEach(ln => {
+      if (y + 5 > pageH - footerH - 6) {
+        drawFooter(doc, pageNum[0]);
+        doc.addPage();
+        pageNum[0]++;
+        drawHeader(doc);
+        drawFooter(doc, pageNum[0]);
+        y = headerH + 12;
+      }
+      doc.text(ln, marginL, y);
+      y += 4.2;
+    });
+
+    // ── Save ──
+    const condSlug = (document.getElementById('f_condition').value.trim() || 'Report')
+      .replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').slice(0, 30);
+    const dateSlug = rawDate.replace(/-/g, '');
+    const filename = `PreClaim_${condSlug}_${dateSlug}.pdf`;
+
+    doc.save(filename);
+    showToast(`✓ PDF saved: ${filename}`);
+  }
+</script>
+</body>
+</html>
