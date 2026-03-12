@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ulink Assist | Pre-Claim Assessment</title>
+  <title>Ulink Assist | AI Pre-Claim Assessment</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
@@ -12,12 +12,12 @@
       --teal-dark: rgb(40,130,130);
       --teal-light: rgba(60,170,170,0.15);
       --orange: rgb(220,90,30);
-      --orange-light: rgba(220,90,30,0.15);
+      --orange-light: rgba(220,90,30,0.12);
       --dark: rgb(60,60,60);
       --bg: #0f1117;
       --surface: #181c27;
       --surface2: #1e2334;
-      --border: rgba(60,170,170,0.25);
+      --border: rgba(60,170,170,0.22);
       --text: #e8ecf4;
       --text-muted: #8892a4;
       --radius: 10px;
@@ -51,10 +51,7 @@
       object-fit: contain;
       border-radius: 6px;
     }
-    .topbar-title {
-      display: flex;
-      flex-direction: column;
-    }
+    .topbar-title { display: flex; flex-direction: column; }
     .topbar-title span:first-child {
       font-size: 1.05rem;
       font-weight: 700;
@@ -79,7 +76,7 @@
       text-transform: uppercase;
     }
 
-    /* ── HERO BANNER ── */
+    /* ── HERO ── */
     .hero {
       background: linear-gradient(135deg, rgb(40,130,130) 0%, rgb(20,80,80) 60%, #0f1117 100%);
       padding: 36px 32px 30px;
@@ -94,26 +91,12 @@
       background: radial-gradient(circle, rgba(220,90,30,0.18) 0%, transparent 70%);
       border-radius: 50%;
     }
-    .hero h1 {
-      font-size: 1.7rem;
-      font-weight: 700;
-      color: #fff;
-      letter-spacing: -0.02em;
-    }
+    .hero h1 { font-size: 1.7rem; font-weight: 700; color: #fff; letter-spacing: -0.02em; }
     .hero h1 span { color: var(--orange); }
-    .hero p {
-      margin-top: 8px;
-      color: rgba(255,255,255,0.65);
-      font-size: 0.88rem;
-      max-width: 520px;
-    }
+    .hero p { margin-top: 8px; color: rgba(255,255,255,0.65); font-size: 0.88rem; max-width: 540px; }
 
-    /* ── MAIN LAYOUT ── */
-    .container {
-      max-width: 860px;
-      margin: 32px auto;
-      padding: 0 20px;
-    }
+    /* ── CONTAINER ── */
+    .container { max-width: 860px; margin: 32px auto; padding: 0 20px; }
 
     /* ── CARD ── */
     .card {
@@ -124,12 +107,7 @@
       margin-bottom: 20px;
       position: relative;
     }
-    .card-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
+    .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
     .card-num {
       width: 28px; height: 28px;
       background: var(--teal);
@@ -148,11 +126,151 @@
       letter-spacing: 0.06em;
     }
 
-    /* ── FORM FIELDS ── */
-    .form-grid {
-      display: grid;
-      gap: 16px;
+    /* ── UPLOAD ZONE ── */
+    .upload-zone {
+      border: 2px dashed var(--teal);
+      border-radius: 12px;
+      background: var(--teal-light);
+      padding: 44px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
     }
+    .upload-zone:hover, .upload-zone.drag-over {
+      background: rgba(60,170,170,0.22);
+      border-color: rgb(80,200,200);
+      transform: translateY(-1px);
+    }
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .upload-icon { font-size: 3rem; margin-bottom: 12px; }
+    .upload-zone h3 { font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+    .upload-zone p { font-size: 0.82rem; color: var(--text-muted); }
+    .upload-types {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+    .upload-type-badge {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--teal);
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* ── FILE SELECTED ── */
+    .file-selected {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .file-icon { font-size: 1.8rem; flex-shrink: 0; }
+    .file-info { flex: 1; min-width: 0; }
+    .file-name { font-size: 0.88rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-size { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+    .file-clear-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      transition: color 0.15s;
+    }
+    .file-clear-btn:hover { color: var(--orange); }
+
+    /* ── ANALYSE BUTTON ── */
+    .btn-analyse {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 15px 28px;
+      background: linear-gradient(135deg, var(--orange), rgb(240,120,50));
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.97rem;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: transform 0.15s, box-shadow 0.2s, filter 0.2s;
+      box-shadow: 0 4px 20px rgba(220,90,30,0.38);
+      margin-top: 16px;
+    }
+    .btn-analyse:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(220,90,30,0.48);
+      filter: brightness(1.08);
+    }
+    .btn-analyse:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+    /* ── LOADING STATE ── */
+    .ai-status {
+      display: none;
+      align-items: center;
+      gap: 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-top: 14px;
+    }
+    .ai-status.show { display: flex; }
+    .spinner {
+      width: 24px; height: 24px;
+      border: 3px solid rgba(60,170,170,0.25);
+      border-top-color: var(--teal);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .status-text { font-size: 0.88rem; color: var(--text-muted); }
+    .status-text strong { color: var(--teal); }
+
+    /* ── AI BADGE ── */
+    .ai-filled-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(60,170,170,0.12);
+      border: 1px solid rgba(60,170,170,0.3);
+      color: var(--teal);
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    /* ── FORM FIELDS ── */
+    .form-grid { display: grid; gap: 16px; }
     .form-grid.cols-2 { grid-template-columns: 1fr 1fr; }
     .form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
 
@@ -165,9 +283,7 @@
       letter-spacing: 0.07em;
       margin-bottom: 6px;
     }
-    .field input,
-    .field select,
-    .field textarea {
+    .field input, .field select, .field textarea {
       width: 100%;
       background: var(--surface2);
       border: 1px solid rgba(255,255,255,0.1);
@@ -179,17 +295,15 @@
       transition: border-color 0.2s, box-shadow 0.2s;
       outline: none;
     }
-    .field input:focus,
-    .field select:focus,
-    .field textarea:focus {
+    .field input:focus, .field select:focus, .field textarea:focus {
       border-color: var(--teal);
       box-shadow: 0 0 0 3px rgba(60,170,170,0.15);
     }
-    .field textarea {
-      resize: vertical;
-      min-height: 100px;
-      line-height: 1.55;
+    .field input.ai-filled, .field select.ai-filled, .field textarea.ai-filled {
+      border-color: rgba(60,170,170,0.4);
+      background: rgba(60,170,170,0.06);
     }
+    .field textarea { resize: vertical; min-height: 100px; line-height: 1.55; }
     .field select option { background: #1e2334; }
 
     /* ── NECESSITY TABLE ── */
@@ -200,9 +314,7 @@
       overflow: hidden;
       border: 1px solid var(--border);
     }
-    .necessity-table thead tr {
-      background: var(--teal);
-    }
+    .necessity-table thead tr { background: var(--teal); }
     .necessity-table thead th {
       padding: 10px 14px;
       font-size: 0.78rem;
@@ -212,11 +324,10 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
-    .necessity-table tbody tr:nth-child(odd) { background: var(--surface2); }
+    .necessity-table tbody tr:nth-child(odd)  { background: var(--surface2); }
     .necessity-table tbody tr:nth-child(even) { background: #161a24; }
     .necessity-table tbody td { padding: 8px 10px; }
-    .necessity-table tbody td input,
-    .necessity-table tbody td textarea {
+    .necessity-table tbody td input, .necessity-table tbody td textarea {
       width: 100%;
       background: transparent;
       border: 1px solid rgba(255,255,255,0.08);
@@ -228,19 +339,15 @@
       outline: none;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
-    .necessity-table tbody td input:focus,
-    .necessity-table tbody td textarea:focus {
+    .necessity-table tbody td input:focus, .necessity-table tbody td textarea:focus {
       border-color: var(--teal);
       box-shadow: 0 0 0 2px rgba(60,170,170,0.15);
     }
-    .necessity-table tbody td textarea { min-height: 56px; resize: vertical; }
-    .row-label {
-      font-size: 0.76rem;
-      font-weight: 600;
-      color: var(--teal);
-      padding-right: 6px;
-      white-space: nowrap;
+    .necessity-table tbody td input.ai-filled, .necessity-table tbody td textarea.ai-filled {
+      border-color: rgba(60,170,170,0.35);
+      background: rgba(60,170,170,0.05);
     }
+    .necessity-table tbody td textarea { min-height: 56px; resize: vertical; }
 
     /* ── GENERATE BUTTON ── */
     .btn-generate {
@@ -271,6 +378,25 @@
     .btn-generate:active { transform: translateY(0); }
     .btn-generate svg { flex-shrink: 0; }
 
+    /* ── DIVIDER ── */
+    .or-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0 0;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .or-divider::before, .or-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
     /* ── TOAST ── */
     #toast {
       position: fixed;
@@ -286,13 +412,14 @@
       display: none;
       z-index: 9999;
       animation: slideUp 0.3s ease;
+      max-width: 340px;
     }
     @keyframes slideUp {
       from { transform: translateY(20px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
+      to   { transform: translateY(0); opacity: 1; }
     }
 
-    /* ── FOOTER INFO ── */
+    /* ── FOOTER ── */
     .footer-info {
       text-align: center;
       font-size: 0.76rem;
@@ -302,9 +429,23 @@
       border-top: 1px solid var(--border);
     }
 
+    /* ── WEBHOOK CONFIG NOTE ── */
+    .config-note {
+      background: var(--orange-light);
+      border: 1px solid rgba(220,90,30,0.3);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.78rem;
+      color: rgba(220,150,100,0.9);
+      margin-top: 12px;
+    }
+    .config-note strong { color: var(--orange); }
+
     @media (max-width: 640px) {
       .form-grid.cols-2, .form-grid.cols-3 { grid-template-columns: 1fr; }
       .hero h1 { font-size: 1.3rem; }
+      .topbar { padding: 12px 16px; }
+      .container { padding: 0 14px; }
     }
   </style>
 </head>
@@ -317,23 +458,79 @@
     <span>Ulink Assist</span>
     <span>Singapore Insurance TPA</span>
   </div>
-  <div class="topbar-badge">Pre-Claim Tool</div>
+  <div class="topbar-badge">Pre-Claim AI Tool</div>
 </div>
 
 <!-- HERO -->
 <div class="hero">
-  <h1>Pre-Claim <span>Assessment</span> Report Generator</h1>
-  <p>Complete the form below to generate a professional PDF assessment report. All processing is done locally — no data leaves your device.</p>
+  <h1>Pre-Claim <span>AI Assessment</span> Generator</h1>
+  <p>Upload a medical document (PDF or image) — our AI will analyse it and auto-generate the full pre-claim assessment. Review, edit, then download your PDF.</p>
 </div>
 
-<!-- FORM -->
+<!-- MAIN FORM -->
 <div class="container">
+
+  <!-- ═══ STEP 1: UPLOAD ═══ -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-num">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </div>
+      <div class="card-title">Step 1 — Upload Medical Document</div>
+    </div>
+
+    <!-- Drop Zone -->
+    <div class="upload-zone" id="dropZone">
+      <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.webp" />
+      <div class="upload-icon">📄</div>
+      <h3>Drop your document here, or click to browse</h3>
+      <p>The AI will read and analyse the document automatically</p>
+      <div class="upload-types">
+        <span class="upload-type-badge">PDF</span>
+        <span class="upload-type-badge">JPG</span>
+        <span class="upload-type-badge">PNG</span>
+        <span class="upload-type-badge">WEBP</span>
+      </div>
+    </div>
+
+    <!-- File preview -->
+    <div class="file-selected" id="filePreview" style="display:none;">
+      <div class="file-icon" id="fileIcon">📄</div>
+      <div class="file-info">
+        <div class="file-name" id="fileName">—</div>
+        <div class="file-size" id="fileSize">—</div>
+      </div>
+      <button class="file-clear-btn" onclick="clearFile()" title="Remove file">✕</button>
+    </div>
+
+    <!-- AI Status -->
+    <div class="ai-status" id="aiStatus">
+      <div class="spinner"></div>
+      <div class="status-text"><strong id="statusText">Uploading document…</strong><br><span id="statusSub">Please wait, this may take a few seconds.</span></div>
+    </div>
+
+    <!-- Analyse button -->
+    <button class="btn-analyse" id="btnAnalyse" onclick="analyseDocument()" disabled>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Analyse with AI
+    </button>
+
+    <!-- Config note — update with your n8n webhook URL -->
+    <div class="config-note" id="webhookNote" style="display:none;">
+      ⚠️ <strong>Webhook not configured.</strong> Please set your n8n webhook URL in the <code>N8N_WEBHOOK_URL</code> constant at the top of the script.
+    </div>
+
+    <!-- Or type manually -->
+    <div class="or-divider">or fill in manually below</div>
+  </div>
+
+  <!-- ═══ STEP 2: REVIEW & EDIT ═══ -->
 
   <!-- CASE INFORMATION -->
   <div class="card">
     <div class="card-header">
       <div class="card-num">0</div>
-      <div class="card-title">Case Information</div>
+      <div class="card-title">Case Information <span id="badge0"></span></div>
     </div>
     <div class="form-grid cols-2">
       <div class="field">
@@ -366,11 +563,11 @@
   <div class="card">
     <div class="card-header">
       <div class="card-num">1</div>
-      <div class="card-title">General Exclusion Check</div>
+      <div class="card-title">General Exclusion Check <span id="badge1"></span></div>
     </div>
     <div class="field">
       <label>Exclusion Assessment Remarks</label>
-      <textarea id="s1" rows="5" placeholder="Describe any applicable policy exclusions, waiting periods, or eligibility concerns..."></textarea>
+      <textarea id="s1" rows="5" placeholder="Describe any applicable policy exclusions, waiting periods, or eligibility concerns…"></textarea>
     </div>
   </div>
 
@@ -378,7 +575,7 @@
   <div class="card">
     <div class="card-header">
       <div class="card-num">2</div>
-      <div class="card-title">Medical Necessity Assessment</div>
+      <div class="card-title">Medical Necessity Assessment <span id="badge2"></span></div>
     </div>
     <table class="necessity-table">
       <thead>
@@ -392,17 +589,17 @@
         <tr>
           <td><input type="text" id="s2_1_outcome" placeholder="e.g. Full Recovery"/></td>
           <td><input type="text" id="s2_1_likelihood" placeholder="e.g. 75%"/></td>
-          <td><textarea id="s2_1_reasoning" placeholder="Clinical justification..."></textarea></td>
+          <td><textarea id="s2_1_reasoning" placeholder="Clinical justification…"></textarea></td>
         </tr>
         <tr>
           <td><input type="text" id="s2_2_outcome" placeholder="e.g. Partial Recovery"/></td>
           <td><input type="text" id="s2_2_likelihood" placeholder="e.g. 20%"/></td>
-          <td><textarea id="s2_2_reasoning" placeholder="Clinical justification..."></textarea></td>
+          <td><textarea id="s2_2_reasoning" placeholder="Clinical justification…"></textarea></td>
         </tr>
         <tr>
           <td><input type="text" id="s2_3_outcome" placeholder="e.g. No Improvement"/></td>
           <td><input type="text" id="s2_3_likelihood" placeholder="e.g. 5%"/></td>
-          <td><textarea id="s2_3_reasoning" placeholder="Clinical justification..."></textarea></td>
+          <td><textarea id="s2_3_reasoning" placeholder="Clinical justification…"></textarea></td>
         </tr>
       </tbody>
     </table>
@@ -412,11 +609,11 @@
   <div class="card">
     <div class="card-header">
       <div class="card-num">3</div>
-      <div class="card-title">Pre-Existing Condition (PEC) Assessment</div>
+      <div class="card-title">Pre-Existing Condition (PEC) Assessment <span id="badge3"></span></div>
     </div>
     <div class="field">
       <label>PEC Remarks</label>
-      <textarea id="s3" rows="5" placeholder="Document any pre-existing conditions, their relevance to the current claim, and applicable policy provisions..."></textarea>
+      <textarea id="s3" rows="5" placeholder="Document any pre-existing conditions, their relevance to the current claim, and applicable policy provisions…"></textarea>
     </div>
   </div>
 
@@ -424,11 +621,11 @@
   <div class="card">
     <div class="card-header">
       <div class="card-num">4</div>
-      <div class="card-title">Reasonable & Customary (R&C) Cost Estimate</div>
+      <div class="card-title">Reasonable &amp; Customary (R&amp;C) Cost Estimate <span id="badge4"></span></div>
     </div>
     <div class="field">
-      <label>R&C Estimate Details</label>
-      <textarea id="s4" rows="5" placeholder="Provide the R&C cost benchmarks, proposed billing amounts, and any deviation analysis..."></textarea>
+      <label>R&amp;C Estimate Details</label>
+      <textarea id="s4" rows="5" placeholder="Provide the R&C cost benchmarks, proposed billing amounts, and any deviation analysis…"></textarea>
     </div>
   </div>
 
@@ -436,11 +633,11 @@
   <div class="card">
     <div class="card-header">
       <div class="card-num">5</div>
-      <div class="card-title">Letter of Guarantee (LOG) Recommendation</div>
+      <div class="card-title">Letter of Guarantee (LOG) Recommendation <span id="badge5"></span></div>
     </div>
     <div class="field">
       <label>LOG Recommendation</label>
-      <textarea id="s5" rows="5" placeholder="State the LOG recommendation, approved amount, conditions, and any remarks to the hospital or insurer..."></textarea>
+      <textarea id="s5" rows="5" placeholder="State the LOG recommendation, approved amount, conditions, and any remarks to the hospital or insurer…"></textarea>
     </div>
   </div>
 
@@ -453,13 +650,20 @@
   </button>
 
   <div class="footer-info">
-    Ulink Assist Pre-Claim Assessment Tool &nbsp;|&nbsp; www.ulinkassist.com &nbsp;|&nbsp; All data processed locally on your device
+    Ulink Assist Pre-Claim Assessment Tool &nbsp;|&nbsp; www.ulinkassist.com &nbsp;|&nbsp; AI-Powered | All data processed securely
   </div>
 </div>
 
 <div id="toast"></div>
 
 <script>
+  // ══════════════════════════════════════════════════
+  //  ⚙️  CONFIGURATION — set your n8n webhook URL here
+  // ══════════════════════════════════════════════════
+  const N8N_WEBHOOK_URL = 'YOUR_N8N_WEBHOOK_URL_HERE';
+  // Example: 'https://your-n8n-instance.app.n8n.cloud/webhook/preclaim-analyse'
+  // ══════════════════════════════════════════════════
+
   // ── Auto-fill today's date ──
   (function () {
     const d = new Date();
@@ -478,8 +682,173 @@
       const reader = new FileReader();
       reader.onload = e => { logoBase64 = e.target.result; };
       reader.readAsDataURL(blob);
-    } catch (_) { /* logo not available — will be skipped in PDF */ }
+    } catch (_) { /* logo not available */ }
   })();
+
+  // ── Webhook config check ──
+  const webhookConfigured = N8N_WEBHOOK_URL && N8N_WEBHOOK_URL !== 'YOUR_N8N_WEBHOOK_URL_HERE';
+  if (!webhookConfigured) {
+    document.getElementById('webhookNote').style.display = 'block';
+  }
+
+  // ── Upload state ──
+  let uploadedFile = null;
+
+  // ── Drop zone events ──
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileSelected(file);
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) handleFileSelected(fileInput.files[0]);
+  });
+
+  function handleFileSelected(file) {
+    const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    if (!allowed.includes(file.type)) {
+      showToast('❌ Only PDF, JPG, PNG, or WEBP files are supported.', 'var(--orange)');
+      return;
+    }
+    uploadedFile = file;
+    document.getElementById('fileIcon').textContent = file.type === 'application/pdf' ? '📄' : '🖼️';
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('fileSize').textContent = formatBytes(file.size);
+    document.getElementById('filePreview').style.display = 'flex';
+    document.getElementById('dropZone').style.display = 'none';
+    document.getElementById('btnAnalyse').disabled = false;
+  }
+
+  function clearFile() {
+    uploadedFile = null;
+    fileInput.value = '';
+    document.getElementById('filePreview').style.display = 'none';
+    document.getElementById('dropZone').style.display = 'block';
+    document.getElementById('btnAnalyse').disabled = true;
+    document.getElementById('aiStatus').classList.remove('show');
+  }
+
+  function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  // ── AI Analysis ──
+  async function analyseDocument() {
+    if (!uploadedFile) return;
+
+    if (!webhookConfigured) {
+      showToast('⚠️ n8n webhook URL not configured. Please set N8N_WEBHOOK_URL in the script.', 'var(--orange)');
+      return;
+    }
+
+    setAnalysing(true, 'Sending document to AI…', 'OCR & extraction in progress…');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', uploadedFile);
+      formData.append('filename', uploadedFile.name);
+      formData.append('filetype', uploadedFile.type);
+
+      setStatus('Analysing with AI…', 'GPT-4 is reading the medical document…');
+
+      const response = await fetch(N8N_WEBHOOK_URL, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+      const data = await response.json();
+
+      setStatus('Populating assessment…', 'Auto-filling all sections…');
+      await new Promise(r => setTimeout(r, 600));
+
+      fillFormFromAI(data);
+      setAnalysing(false);
+      showToast('✅ AI analysis complete! Review the fields and generate your PDF.', 'var(--teal)');
+
+    } catch (err) {
+      setAnalysing(false);
+      console.error(err);
+      showToast(`❌ Analysis failed: ${err.message}`, 'var(--orange)');
+    }
+  }
+
+  function setAnalysing(active, title = '', sub = '') {
+    const btn = document.getElementById('btnAnalyse');
+    const status = document.getElementById('aiStatus');
+    btn.disabled = active;
+    if (active) {
+      status.classList.add('show');
+      setStatus(title, sub);
+    } else {
+      status.classList.remove('show');
+    }
+  }
+
+  function setStatus(title, sub) {
+    document.getElementById('statusText').textContent = title;
+    document.getElementById('statusSub').textContent = sub;
+  }
+
+  // ── Auto-fill from AI JSON ──
+  function fillFormFromAI(data) {
+    const aiBadge = '<span class="ai-filled-badge">✦ AI</span>';
+
+    function setField(id, value) {
+      const el = document.getElementById(id);
+      if (el && value) {
+        el.value = value;
+        el.classList.add('ai-filled');
+      }
+    }
+
+    // Case info
+    setField('f_hospital', data.hospital || data.hospital_name);
+    if (data.hospital_type) {
+      const sel = document.getElementById('f_hospital_type');
+      if (sel) {
+        const opt = [...sel.options].find(o => o.value.toLowerCase() === data.hospital_type.toLowerCase());
+        if (opt) { sel.value = opt.value; sel.classList.add('ai-filled'); }
+      }
+    }
+    setField('f_condition', data.condition || data.diagnosis);
+    setField('f_procedure', data.procedure || data.proposed_procedure);
+
+    // Sections
+    setField('s1', data.s1_exclusion || data.s1 || data.general_exclusion);
+    setField('s3', data.s3_pec || data.s3 || data.pre_existing);
+    setField('s4', data.s4_rc || data.s4 || data.rc_estimate);
+    setField('s5', data.s5_log || data.s5 || data.log_recommendation);
+
+    // Section 2 rows
+    const rows = data.s2_rows || data.medical_necessity || [];
+    const rowIds = [
+      ['s2_1_outcome','s2_1_likelihood','s2_1_reasoning'],
+      ['s2_2_outcome','s2_2_likelihood','s2_2_reasoning'],
+      ['s2_3_outcome','s2_3_likelihood','s2_3_reasoning'],
+    ];
+    rows.forEach((row, i) => {
+      if (!rowIds[i]) return;
+      setField(rowIds[i][0], row.outcome);
+      setField(rowIds[i][1], row.likelihood || row.likelihood_pct);
+      setField(rowIds[i][2], row.reasoning || row.reason);
+    });
+
+    // Add AI badges to section headers
+    ['badge0','badge1','badge2','badge3','badge4','badge5'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = aiBadge;
+    });
+  }
 
   // ── Toast helper ──
   function showToast(msg, color='var(--teal)') {
@@ -491,17 +860,18 @@
     void t.offsetWidth;
     t.style.animation = 'slideUp 0.3s ease';
     clearTimeout(window._toastTimer);
-    window._toastTimer = setTimeout(() => { t.style.display = 'none'; }, 4000);
+    window._toastTimer = setTimeout(() => { t.style.display = 'none'; }, 5000);
   }
 
-  // ── PDF Colors ──
+  // ══════════════════════════════════════════════════
+  //  PDF GENERATION
+  // ══════════════════════════════════════════════════
   const TEAL   = [60, 170, 170];
   const ORANGE = [220, 90, 30];
   const DARK   = [60, 60, 60];
   const LGRAY  = [235, 238, 242];
   const MGRAY  = [200, 208, 218];
 
-  // ── Text wrapper for jsPDF ──
   function wrapText(doc, text, x, y, maxW, lineH, pageH, headerH, footerH, drawHeaderFn, drawFooterFn, pageNum) {
     const lines = doc.splitTextToSize(text||'', maxW);
     for (let i = 0; i < lines.length; i++) {
@@ -519,27 +889,24 @@
     return y;
   }
 
-  // ── Main generate function ──
   async function generatePDF() {
     const { jsPDF } = window.jspdf;
 
-    // Gather values
-    const rawDate    = document.getElementById('f_date').value;
-    const hospital   = document.getElementById('f_hospital').value.trim() || '—';
-    const hosType    = document.getElementById('f_hospital_type').value;
-    const condition  = document.getElementById('f_condition').value.trim() || '—';
-    const procedure  = document.getElementById('f_procedure').value.trim() || '—';
-    const s1         = document.getElementById('s1').value.trim() || '—';
-    const s2rows     = [
-      { out: document.getElementById('s2_1_outcome').value.trim(),    pct: document.getElementById('s2_1_likelihood').value.trim(),    rsn: document.getElementById('s2_1_reasoning').value.trim() },
-      { out: document.getElementById('s2_2_outcome').value.trim(),    pct: document.getElementById('s2_2_likelihood').value.trim(),    rsn: document.getElementById('s2_2_reasoning').value.trim() },
-      { out: document.getElementById('s2_3_outcome').value.trim(),    pct: document.getElementById('s2_3_likelihood').value.trim(),    rsn: document.getElementById('s2_3_reasoning').value.trim() },
+    const rawDate   = document.getElementById('f_date').value;
+    const hospital  = document.getElementById('f_hospital').value.trim() || '—';
+    const hosType   = document.getElementById('f_hospital_type').value;
+    const condition = document.getElementById('f_condition').value.trim() || '—';
+    const procedure = document.getElementById('f_procedure').value.trim() || '—';
+    const s1        = document.getElementById('s1').value.trim() || '—';
+    const s2rows    = [
+      { out: document.getElementById('s2_1_outcome').value.trim(), pct: document.getElementById('s2_1_likelihood').value.trim(), rsn: document.getElementById('s2_1_reasoning').value.trim() },
+      { out: document.getElementById('s2_2_outcome').value.trim(), pct: document.getElementById('s2_2_likelihood').value.trim(), rsn: document.getElementById('s2_2_reasoning').value.trim() },
+      { out: document.getElementById('s2_3_outcome').value.trim(), pct: document.getElementById('s2_3_likelihood').value.trim(), rsn: document.getElementById('s2_3_reasoning').value.trim() },
     ];
     const s3 = document.getElementById('s3').value.trim() || '—';
     const s4 = document.getElementById('s4').value.trim() || '—';
     const s5 = document.getElementById('s5').value.trim() || '—';
 
-    // Format date for display
     let displayDate = rawDate;
     if (rawDate) {
       const [y,m,d] = rawDate.split('-');
@@ -547,48 +914,38 @@
       displayDate = `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
     }
 
-    // PDF setup
-    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-    const pageW  = 210;
-    const pageH  = 297;
-    const marginL = 16;
-    const marginR = 16;
+    const doc      = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW    = 210, pageH = 297;
+    const marginL  = 16, marginR = 16;
     const contentW = pageW - marginL - marginR;
-    const headerH = 22;
-    const footerH = 12;
+    const headerH  = 22, footerH = 12;
     const pageNum  = [1];
 
-    // ── Draw Header ──
     function drawHeader(d) {
       d.setFillColor(...TEAL);
       d.rect(0, 0, pageW, headerH, 'F');
-
-      // Logo
       if (logoBase64) {
         try { d.addImage(logoBase64, 'PNG', pageW - 38, 2, 18, 18); } catch(_){}
       }
-
       d.setFont('helvetica', 'bold');
       d.setFontSize(10);
       d.setTextColor(255,255,255);
       d.text('Ulink Assist  |  Pre-Claim Assessment Report', marginL, 14);
     }
 
-    // ── Draw Footer ──
     function drawFooter(d, pn) {
       d.setFillColor(...TEAL);
       d.rect(0, pageH - footerH, pageW, footerH, 'F');
-      d.setFont('helvetica', 'normal');
+      d.setFont('helvetica','normal');
       d.setFontSize(7.5);
       d.setTextColor(255,255,255);
       d.text('Ulink Assist Pre-Claim Assessment  |  www.ulinkassist.com', marginL, pageH - 4.5);
       d.text(`Page ${pn}`, pageW - marginR, pageH - 4.5, { align:'right' });
     }
 
-    // ── Section heading helper ──
     function sectionHead(d, label, yRef) {
       let y = yRef;
-      d.setFont('helvetica', 'bold');
+      d.setFont('helvetica','bold');
       d.setFontSize(10.5);
       d.setTextColor(...TEAL);
       d.text(label, marginL, y);
@@ -599,24 +956,19 @@
       return y + 6;
     }
 
-    // ── Body text helper ──
     function bodyText(d, text, x, yRef) {
-      d.setFont('helvetica', 'normal');
+      d.setFont('helvetica','normal');
       d.setFontSize(9);
       d.setTextColor(...DARK);
-      return wrapText(d, text, x, yRef, contentW - (x - marginL), 5, pageH, headerH, footerH, drawHeader, drawFooter, pageNum);
+      return wrapText(d, text, x, yRef, contentW-(x-marginL), 5, pageH, headerH, footerH, drawHeader, drawFooter, pageNum);
     }
 
-    // ==================
     // PAGE 1
-    // ==================
     drawHeader(doc);
     drawFooter(doc, pageNum[0]);
-
     let y = headerH + 10;
 
-    // ── Orange title ──
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('helvetica','bold');
     doc.setFontSize(15);
     doc.setTextColor(...ORANGE);
     doc.text('Pre-Claim Assessment Summary', marginL, y);
@@ -626,231 +978,121 @@
     doc.line(marginL, y, pageW - marginR, y);
     y += 7;
 
-    // ── Date right-aligned ──
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('helvetica','normal');
     doc.setFontSize(8.5);
-    doc.setTextColor(120, 130, 145);
+    doc.setTextColor(120,130,145);
     doc.text(`Date: ${displayDate}`, pageW - marginR, y, { align:'right' });
     y += 6;
 
-    // ── Case info box ──
+    // Case info box
     const boxH = 28;
     doc.setFillColor(...LGRAY);
     doc.setDrawColor(...MGRAY);
     doc.setLineWidth(0.4);
     doc.roundedRect(marginL, y, contentW, boxH, 2, 2, 'FD');
 
-    const colA = marginL + 5;
-    const colB = marginL + contentW / 2;
-
-    doc.setFont('helvetica', 'bold');
+    const colA = marginL + 5, colB = marginL + contentW / 2;
+    doc.setFont('helvetica','bold');
     doc.setFontSize(7.5);
     doc.setTextColor(100,110,125);
     doc.text('HOSPITAL', colA, y + 7);
     doc.text('HOSPITAL TYPE', colB, y + 7);
     doc.text('CONDITION / DIAGNOSIS', colA, y + 18);
     doc.text('PROPOSED PROCEDURE', colB, y + 18);
-
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('helvetica','normal');
     doc.setFontSize(9.5);
     doc.setTextColor(...DARK);
     doc.text(hospital, colA, y + 13);
     doc.text(hosType, colB, y + 13);
-    // Truncate long text if needed
-    const condTxt = doc.splitTextToSize(condition, contentW/2 - 8)[0] || condition;
-    const procTxt = doc.splitTextToSize(procedure, contentW/2 - 8)[0] || procedure;
-    doc.text(condTxt, colA, y + 24);
-    doc.text(procTxt, colB, y + 24);
-
+    doc.text(doc.splitTextToSize(condition, contentW/2-8)[0] || condition, colA, y + 24);
+    doc.text(doc.splitTextToSize(procedure, contentW/2-8)[0] || procedure, colB, y + 24);
     y += boxH + 10;
 
-    // ==================
-    // SECTION 1
-    // ==================
+    // Section 1
     y = sectionHead(doc, 'Section 1: General Exclusion Check', y);
     y = bodyText(doc, s1, marginL, y);
     y += 8;
 
-    // ==================
-    // SECTION 2 — TABLE
-    // ==================
-    // Check if we need a new page
+    // Section 2
     if (y + 60 > pageH - footerH - 8) {
       drawFooter(doc, pageNum[0]);
-      doc.addPage();
-      pageNum[0]++;
-      drawHeader(doc);
-      drawFooter(doc, pageNum[0]);
+      doc.addPage(); pageNum[0]++;
+      drawHeader(doc); drawFooter(doc, pageNum[0]);
       y = headerH + 12;
     }
-
     y = sectionHead(doc, 'Section 2: Medical Necessity Assessment', y);
 
-    // Table header
     const col1W = 50, col2W = 28, col3W = contentW - col1W - col2W;
-    const tblX = marginL;
-    const rowH = 7;
-
+    const tblX = marginL, rowH = 7;
     doc.setFillColor(...TEAL);
     doc.rect(tblX, y, contentW, rowH, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(255,255,255);
-    doc.text('Outcome', tblX + 3, y + 5);
-    doc.text('Likelihood %', tblX + col1W + 3, y + 5);
-    doc.text('Reasoning', tblX + col1W + col2W + 3, y + 5);
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(255,255,255);
+    doc.text('Outcome', tblX+3, y+5);
+    doc.text('Likelihood %', tblX+col1W+3, y+5);
+    doc.text('Reasoning', tblX+col1W+col2W+3, y+5);
     y += rowH;
 
-    // Table rows
     s2rows.forEach((row, idx) => {
-      // Compute row height based on reasoning text
       doc.setFontSize(8.5);
-      const rsnLines = doc.splitTextToSize(row.rsn || '—', col3W - 6);
-      const dynRowH = Math.max(10, rsnLines.length * 4.5 + 5);
-
-      // Page break check
+      const rsnLines = doc.splitTextToSize(row.rsn||'—', col3W-6);
+      const dynRowH  = Math.max(10, rsnLines.length * 4.5 + 5);
       if (y + dynRowH > pageH - footerH - 8) {
         drawFooter(doc, pageNum[0]);
-        doc.addPage();
-        pageNum[0]++;
-        drawHeader(doc);
-        drawFooter(doc, pageNum[0]);
+        doc.addPage(); pageNum[0]++;
+        drawHeader(doc); drawFooter(doc, pageNum[0]);
         y = headerH + 12;
-        // Redraw header row
         doc.setFillColor(...TEAL);
         doc.rect(tblX, y, contentW, rowH, 'F');
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(8);
-        doc.setTextColor(255,255,255);
-        doc.text('Outcome', tblX + 3, y + 5);
-        doc.text('Likelihood %', tblX + col1W + 3, y + 5);
-        doc.text('Reasoning', tblX + col1W + col2W + 3, y + 5);
+        doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(255,255,255);
+        doc.text('Outcome', tblX+3, y+5);
+        doc.text('Likelihood %', tblX+col1W+3, y+5);
+        doc.text('Reasoning', tblX+col1W+col2W+3, y+5);
         y += rowH;
       }
-
-      const bg = idx % 2 === 0 ? [255,255,255] : LGRAY;
-      doc.setFillColor(...bg);
+      doc.setFillColor(...(idx%2===0?[255,255,255]:LGRAY));
       doc.rect(tblX, y, contentW, dynRowH, 'F');
-
-      // Cell borders
-      doc.setDrawColor(...MGRAY);
-      doc.setLineWidth(0.2);
-      doc.line(tblX + col1W, y, tblX + col1W, y + dynRowH);
-      doc.line(tblX + col1W + col2W, y, tblX + col1W + col2W, y + dynRowH);
+      doc.setDrawColor(...MGRAY); doc.setLineWidth(0.2);
+      doc.line(tblX+col1W, y, tblX+col1W, y+dynRowH);
+      doc.line(tblX+col1W+col2W, y, tblX+col1W+col2W, y+dynRowH);
       doc.rect(tblX, y, contentW, dynRowH);
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8.5);
-      doc.setTextColor(...DARK);
-      doc.text(row.out || '—', tblX + 3, y + 6);
-      doc.text(row.pct || '—', tblX + col1W + 3, y + 6);
-
-      // Reasoning with wrap
-      rsnLines.forEach((ln, li) => {
-        doc.text(ln, tblX + col1W + col2W + 3, y + 6 + li * 4.5);
-      });
-
+      doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(...DARK);
+      doc.text(row.out||'—', tblX+3, y+6);
+      doc.text(row.pct||'—', tblX+col1W+3, y+6);
+      rsnLines.forEach((ln,li) => doc.text(ln, tblX+col1W+col2W+3, y+6+li*4.5));
       y += dynRowH;
     });
-
     y += 9;
 
-    // ==================
-    // SECTION 3
-    // ==================
+    // Section 3
     if (y + 40 > pageH - footerH - 8) {
-      drawFooter(doc, pageNum[0]);
-      doc.addPage();
-      pageNum[0]++;
-      drawHeader(doc);
-      drawFooter(doc, pageNum[0]);
-      y = headerH + 12;
+      drawFooter(doc, pageNum[0]); doc.addPage(); pageNum[0]++;
+      drawHeader(doc); drawFooter(doc, pageNum[0]); y = headerH + 12;
     }
     y = sectionHead(doc, 'Section 3: Pre-Existing Condition (PEC) Assessment', y);
     y = bodyText(doc, s3, marginL, y);
     y += 8;
 
-    // ==================
-    // SECTION 4
-    // ==================
+    // Section 4
     if (y + 40 > pageH - footerH - 8) {
-      drawFooter(doc, pageNum[0]);
-      doc.addPage();
-      pageNum[0]++;
-      drawHeader(doc);
-      drawFooter(doc, pageNum[0]);
-      y = headerH + 12;
+      drawFooter(doc, pageNum[0]); doc.addPage(); pageNum[0]++;
+      drawHeader(doc); drawFooter(doc, pageNum[0]); y = headerH + 12;
     }
     y = sectionHead(doc, 'Section 4: Reasonable & Customary (R&C) Cost Estimate', y);
     y = bodyText(doc, s4, marginL, y);
     y += 8;
 
-    // ==================
-    // SECTION 5
-    // ==================
+    // Section 5
     if (y + 40 > pageH - footerH - 8) {
-      drawFooter(doc, pageNum[0]);
-      doc.addPage();
-      pageNum[0]++;
-      drawHeader(doc);
-      drawFooter(doc, pageNum[0]);
-      y = headerH + 12;
+      drawFooter(doc, pageNum[0]); doc.addPage(); pageNum[0]++;
+      drawHeader(doc); drawFooter(doc, pageNum[0]); y = headerH + 12;
     }
     y = sectionHead(doc, 'Section 5: Letter of Guarantee (LOG) Recommendation', y);
     y = bodyText(doc, s5, marginL, y);
-    y += 10;
 
-    // ==================
-    // DISCLAIMER
-    // ==================
-    if (y + 40 > pageH - footerH - 8) {
-      drawFooter(doc, pageNum[0]);
-      doc.addPage();
-      pageNum[0]++;
-      drawHeader(doc);
-      drawFooter(doc, pageNum[0]);
-      y = headerH + 12;
-    }
-
-    // Orange disclaimer heading
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(...ORANGE);
-    doc.text('Disclaimer', marginL, y);
-    y += 5;
-
-    const disclaimerText =
-      'This Pre-Claim Assessment Report is prepared by Ulink Assist Pte. Ltd. solely for the purpose of assisting the insurer in evaluating a pre-authorisation request. ' +
-      'The recommendations and estimates contained herein are based on information available at the time of assessment and do not constitute a guarantee of coverage, payment, or insurer approval. ' +
-      'Final coverage decisions remain the sole prerogative of the relevant insurer. Policy terms, conditions, and exclusions shall always prevail. ' +
-      'This document is strictly confidential and intended for the designated recipient only. Unauthorised disclosure, copying, or distribution is prohibited. ' +
-      'Ulink Assist Pte. Ltd. accepts no liability for decisions made solely on the basis of this report.';
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.8);
-    doc.setTextColor(100, 110, 125);
-    const disLines = doc.splitTextToSize(disclaimerText, contentW);
-    disLines.forEach(ln => {
-      if (y + 5 > pageH - footerH - 6) {
-        drawFooter(doc, pageNum[0]);
-        doc.addPage();
-        pageNum[0]++;
-        drawHeader(doc);
-        drawFooter(doc, pageNum[0]);
-        y = headerH + 12;
-      }
-      doc.text(ln, marginL, y);
-      y += 4.2;
-    });
-
-    // ── Save ──
-    const condSlug = (document.getElementById('f_condition').value.trim() || 'Report')
-      .replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').slice(0, 30);
-    const dateSlug = rawDate.replace(/-/g, '');
-    const filename = `PreClaim_${condSlug}_${dateSlug}.pdf`;
-
-    doc.save(filename);
-    showToast(`✓ PDF saved: ${filename}`);
+    // Save
+    const fname = `PreClaim_${(condition||'Assessment').replace(/\s+/g,'_')}_${displayDate.replace(/\s+/g,'')}.pdf`;
+    doc.save(fname);
+    showToast('✅ PDF downloaded successfully!');
   }
 </script>
 </body>
