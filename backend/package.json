@@ -1,0 +1,17 @@
+{
+  "name": "ulink-preclaim-backend",
+  "version": "1.0.0",
+  "description": "AI backend for Ulink Pre-Claim Assessment Tool",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "openai": "^4.28.0",
+    "pdf-parse": "^1.1.1"
+  }
+}
