@@ -1,869 +1,601 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ulink Assist | Pre-Claim AI Assessment</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <style>
-    :root{
-      --teal:rgb(60,170,170);--teal-d:rgb(40,130,130);--teal-l:rgba(60,170,170,.14);
-      --org:rgb(220,90,30);--org-l:rgba(220,90,30,.12);
-      --bg:#0f1117;--sur:#181c27;--sur2:#1e2334;
-      --bdr:rgba(60,170,170,.22);--txt:#e8ecf4;--muted:#8892a4;--r:10px;
-    }
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{background:var(--bg);color:var(--txt);font-family:'Inter',sans-serif;min-height:100vh;padding-bottom:60px}
-
-    /* ── SETTINGS BAR ── */
-    .settings-bar{
-      background:#0c0f18;border-bottom:1px solid rgba(255,255,255,.07);
-      padding:10px 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-    }
-    .settings-bar label{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap}
-    .settings-bar input{
-      flex:1;min-width:260px;max-width:480px;
-      background:var(--sur2);border:1px solid rgba(255,255,255,.1);border-radius:6px;
-      color:var(--txt);font-family:'Inter',sans-serif;font-size:.82rem;padding:7px 12px;outline:none;
-      transition:border-color .2s;
-    }
-    .settings-bar input:focus{border-color:var(--teal)}
-    .settings-bar input::placeholder{color:#555e70}
-    .key-status{font-size:.72rem;font-weight:600;padding:4px 10px;border-radius:20px;white-space:nowrap}
-    .key-status.set{background:rgba(60,170,170,.15);color:var(--teal);border:1px solid rgba(60,170,170,.3)}
-    .key-status.missing{background:rgba(220,90,30,.12);color:var(--org);border:1px solid rgba(220,90,30,.3)}
-
-    /* ── TOP NAV ── */
-    .topbar{
-      background:var(--sur);border-bottom:1px solid var(--bdr);
-      padding:13px 28px;display:flex;align-items:center;gap:14px;
-      position:sticky;top:0;z-index:100;backdrop-filter:blur(8px);
-    }
-    #nav-logo{height:42px;object-fit:contain;border-radius:6px}
-    .topbar-title{display:flex;flex-direction:column}
-    .topbar-title span:first-child{font-size:1rem;font-weight:700;color:var(--teal);letter-spacing:.03em}
-    .topbar-title span:last-child{font-size:.7rem;color:var(--muted)}
-    .topbar-badge{
-      margin-left:auto;background:var(--teal-l);border:1px solid var(--bdr);
-      color:var(--teal);font-size:.68rem;font-weight:600;padding:4px 10px;
-      border-radius:20px;letter-spacing:.08em;text-transform:uppercase;
-    }
-
-    /* ── HERO ── */
-    .hero{
-      background:linear-gradient(135deg,rgb(40,130,130) 0%,rgb(20,80,80) 60%,#0f1117 100%);
-      padding:34px 28px 28px;position:relative;overflow:hidden;
-    }
-    .hero::after{
-      content:'';position:absolute;right:-60px;top:-60px;width:260px;height:260px;
-      background:radial-gradient(circle,rgba(220,90,30,.18) 0%,transparent 70%);border-radius:50%;
-    }
-    .hero h1{font-size:1.7rem;font-weight:700;color:#fff;letter-spacing:-.02em}
-    .hero h1 span{color:var(--org)}
-    .hero p{margin-top:8px;color:rgba(255,255,255,.6);font-size:.85rem;max-width:520px}
-
-    /* ── CONTAINER ── */
-    .container{max-width:900px;margin:28px auto;padding:0 18px}
-
-    /* ── CARD ── */
-    .card{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r);padding:26px 28px;margin-bottom:18px}
-    .card-header{display:flex;align-items:center;gap:10px;margin-bottom:18px}
-    .card-num{
-      width:28px;height:28px;background:var(--teal);color:#fff;border-radius:50%;
-      font-size:.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;
-    }
-    .card-title{font-size:.9rem;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:.06em}
-
-    /* ── UPLOAD ZONE ── */
-    .upload-zone{
-      border:2px dashed var(--teal);border-radius:12px;background:var(--teal-l);
-      padding:42px 20px;text-align:center;cursor:pointer;transition:all .2s;position:relative;
-    }
-    .upload-zone:hover,.upload-zone.drag-over{background:rgba(60,170,170,.22);transform:translateY(-1px)}
-    .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-    .upload-icon{font-size:2.8rem;margin-bottom:10px}
-    .upload-zone h3{font-size:.95rem;font-weight:600;color:var(--txt);margin-bottom:5px}
-    .upload-zone p{font-size:.8rem;color:var(--muted)}
-    .type-pills{display:flex;justify-content:center;gap:7px;margin-top:12px;flex-wrap:wrap}
-    .type-pill{background:var(--sur2);border:1px solid var(--bdr);color:var(--teal);font-size:.67rem;font-weight:600;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.06em}
-
-    /* ── FILE PREVIEW ── */
-    .file-preview{
-      background:var(--sur2);border:1px solid var(--bdr);border-radius:10px;
-      padding:13px 16px;display:flex;align-items:center;gap:12px;margin-top:12px;
-    }
-    .file-prev-icon{font-size:1.7rem;flex-shrink:0}
-    .file-prev-info{flex:1;min-width:0}
-    .file-prev-name{font-size:.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .file-prev-size{font-size:.73rem;color:var(--muted);margin-top:2px}
-    .btn-clear{background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:4px;border-radius:6px;transition:color .15s}
-    .btn-clear:hover{color:var(--org)}
-
-    /* ── AI STATUS ── */
-    .ai-status{display:none;align-items:center;gap:12px;background:var(--sur2);border:1px solid var(--bdr);border-radius:10px;padding:14px 18px;margin-top:12px}
-    .ai-status.show{display:flex}
-    .spinner{width:22px;height:22px;border:3px solid rgba(60,170,170,.25);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .status-text{font-size:.85rem;color:var(--muted)}
-    .status-text strong{color:var(--teal)}
-
-    /* ── BUTTONS ── */
-    .btn-analyse{
-      display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
-      padding:14px 24px;background:linear-gradient(135deg,var(--org),rgb(240,120,50));
-      color:#fff;font-family:'Inter',sans-serif;font-size:.93rem;font-weight:700;
-      border:none;border-radius:var(--r);cursor:pointer;letter-spacing:.04em;
-      transition:transform .15s,box-shadow .2s,filter .2s;box-shadow:0 4px 20px rgba(220,90,30,.35);margin-top:14px;
-    }
-    .btn-analyse:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 28px rgba(220,90,30,.45);filter:brightness(1.08)}
-    .btn-analyse:disabled{opacity:.5;cursor:not-allowed;transform:none}
-
-    .btn-generate{
-      display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
-      padding:15px 24px;background:linear-gradient(135deg,var(--teal-d),var(--teal));
-      color:#fff;font-family:'Inter',sans-serif;font-size:.97rem;font-weight:700;
-      border:none;border-radius:var(--r);cursor:pointer;letter-spacing:.04em;
-      transition:transform .15s,box-shadow .2s,filter .2s;box-shadow:0 4px 20px rgba(60,170,170,.32);margin-top:8px;
-    }
-    .btn-generate:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(60,170,170,.42);filter:brightness(1.08)}
-
-    .btn-copy{
-      display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
-      padding:13px 24px;background:var(--sur2);border:1px solid var(--bdr);
-      color:var(--txt);font-family:'Inter',sans-serif;font-size:.9rem;font-weight:600;
-      border-radius:var(--r);cursor:pointer;letter-spacing:.03em;margin-top:10px;
-      transition:border-color .2s,background .2s;
-    }
-    .btn-copy:hover{border-color:var(--teal);background:var(--teal-l)}
-
-    /* ── OR DIVIDER ── */
-    .or-div{display:flex;align-items:center;gap:10px;margin:16px 0 0;color:var(--muted);font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
-    .or-div::before,.or-div::after{content:'';flex:1;height:1px;background:var(--bdr)}
-
-    /* ── FORM FIELDS ── */
-    .form-grid{display:grid;gap:14px}
-    .form-grid.c2{grid-template-columns:1fr 1fr}
-    .form-grid.c3{grid-template-columns:1fr 1fr 1fr}
-    .field label{display:block;font-size:.73rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
-    .field input,.field select,.field textarea{
-      width:100%;background:var(--sur2);border:1px solid rgba(255,255,255,.1);border-radius:8px;
-      color:var(--txt);font-family:'Inter',sans-serif;font-size:.86rem;padding:9px 13px;
-      transition:border-color .2s,box-shadow .2s;outline:none;
-    }
-    .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(60,170,170,.13)}
-    .field textarea{resize:vertical;min-height:96px;line-height:1.55}
-    .field select option{background:#1e2334}
-    .ai-filled{border-color:rgba(60,170,170,.4)!important;background:rgba(60,170,170,.06)!important}
-    .ai-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(60,170,170,.12);border:1px solid rgba(60,170,170,.3);color:var(--teal);font-size:.65rem;font-weight:600;padding:2px 7px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;margin-left:7px;vertical-align:middle}
-
-    /* ── NECESSITY TABLE ── */
-    .ntable{width:100%;border-collapse:collapse;border-radius:8px;overflow:hidden;border:1px solid var(--bdr)}
-    .ntable thead tr{background:var(--teal)}
-    .ntable thead th{padding:10px 12px;font-size:.75rem;font-weight:600;color:#fff;text-align:left;text-transform:uppercase;letter-spacing:.05em}
-    .ntable tbody tr:nth-child(odd){background:var(--sur2)}
-    .ntable tbody tr:nth-child(even){background:#161a24}
-    .ntable tbody td{padding:8px 9px}
-    .ntable tbody td input,.ntable tbody td textarea{
-      width:100%;background:transparent;border:1px solid rgba(255,255,255,.08);border-radius:6px;
-      color:var(--txt);font-family:'Inter',sans-serif;font-size:.82rem;padding:6px 9px;outline:none;transition:border-color .2s;
-    }
-    .ntable tbody td input:focus,.ntable tbody td textarea:focus{border-color:var(--teal)}
-    .ntable tbody td textarea{min-height:54px;resize:vertical}
-
-    /* ── TOAST ── */
-    #toast{
-      position:fixed;bottom:28px;right:28px;background:var(--sur);border:1px solid var(--teal);
-      color:var(--txt);padding:13px 20px;border-radius:10px;font-size:.85rem;font-weight:500;
-      box-shadow:0 8px 28px rgba(0,0,0,.5);display:none;z-index:9999;animation:slideUp .3s ease;max-width:340px;
-    }
-    @keyframes slideUp{from{transform:translateY(18px);opacity:0}to{transform:translateY(0);opacity:1}}
-
-    /* ── FOOTER ── */
-    .footer-info{text-align:center;font-size:.73rem;color:var(--muted);margin-top:28px;padding-top:18px;border-top:1px solid var(--bdr)}
-
-    /* ── RESPONSIVE ── */
-    @media(max-width:640px){
-      .form-grid.c2,.form-grid.c3{grid-template-columns:1fr}
-      .hero h1{font-size:1.3rem}
-    }
-  </style>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Ulink Assist | Pre-Claim Assessment Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root{--t:rgb(60,170,170);--td:rgb(40,130,130);--tl:rgba(60,170,170,.13);--o:rgb(220,90,30);--ol:rgba(220,90,30,.12);--bg:#0f1117;--s:#181c27;--s2:#1e2334;--bd:rgba(60,170,170,.2);--tx:#e8ecf4;--mu:#8892a4;--r:9px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font-family:'Inter',sans-serif;min-height:100vh;padding-bottom:60px}
+.sbar{background:#0b0e16;border-bottom:1px solid rgba(255,255,255,.06);padding:9px 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sbar label{font-size:.7rem;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap}
+.sbar input{flex:1;min-width:240px;max-width:460px;background:var(--s2);border:1px solid rgba(255,255,255,.09);border-radius:6px;color:var(--tx);font-family:'Inter',sans-serif;font-size:.82rem;padding:7px 12px;outline:none;transition:border-color .2s}
+.sbar input:focus{border-color:var(--t)}
+.kst{font-size:.7rem;font-weight:600;padding:3px 10px;border-radius:20px}
+.kst.ok{background:rgba(60,170,170,.13);color:var(--t);border:1px solid rgba(60,170,170,.3)}
+.kst.no{background:var(--ol);color:var(--o);border:1px solid rgba(220,90,30,.3)}
+.topbar{background:var(--s);border-bottom:1px solid var(--bd);padding:12px 26px;display:flex;align-items:center;gap:13px;position:sticky;top:0;z-index:100;backdrop-filter:blur(8px)}
+#nav-logo{height:40px;object-fit:contain;border-radius:6px}
+.tbr{display:flex;flex-direction:column}.tbr span:first-child{font-size:.98rem;font-weight:700;color:var(--t)}.tbr span:last-child{font-size:.69rem;color:var(--mu)}
+.tbadge{margin-left:auto;background:var(--tl);border:1px solid var(--bd);color:var(--t);font-size:.67rem;font-weight:600;padding:3px 9px;border-radius:20px;letter-spacing:.07em;text-transform:uppercase}
+.hero{background:linear-gradient(135deg,rgb(40,130,130),rgb(18,70,70) 60%,#0f1117);padding:32px 26px 26px;position:relative;overflow:hidden}
+.hero::after{content:'';position:absolute;right:-50px;top:-50px;width:240px;height:240px;background:radial-gradient(circle,rgba(220,90,30,.16),transparent 70%);border-radius:50%}
+.hero h1{font-size:1.6rem;font-weight:700;color:#fff;letter-spacing:-.02em}.hero h1 span{color:var(--o)}
+.hero p{margin-top:7px;color:rgba(255,255,255,.58);font-size:.83rem;max-width:500px}
+.wrap{max-width:920px;margin:26px auto;padding:0 16px}
+.card{background:var(--s);border:1px solid var(--bd);border-radius:var(--r);padding:24px 26px;margin-bottom:16px}
+.ch{display:flex;align-items:center;gap:9px;margin-bottom:16px}
+.cn{width:26px;height:26px;background:var(--t);color:#fff;border-radius:50%;font-size:.73rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ct{font-size:.88rem;font-weight:600;color:var(--t);text-transform:uppercase;letter-spacing:.06em}
+.int-badge{font-size:.65rem;font-weight:700;background:rgba(220,90,30,.15);color:var(--o);border:1px solid rgba(220,90,30,.3);padding:2px 7px;border-radius:20px;margin-left:6px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.field label{display:block;font-size:.7rem;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;background:var(--s2);border:1px solid rgba(255,255,255,.09);border-radius:7px;color:var(--tx);font-family:'Inter',sans-serif;font-size:.85rem;padding:8px 12px;outline:none;transition:border-color .2s,box-shadow .2s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--t);box-shadow:0 0 0 3px var(--tl)}
+.field textarea{resize:vertical;min-height:90px;line-height:1.5}
+.field select option{background:#1e2334}
+.ai-f{border-color:rgba(60,170,170,.4)!important;background:rgba(60,170,170,.05)!important}
+.aibg{display:inline-flex;align-items:center;gap:3px;background:rgba(60,170,170,.12);border:1px solid rgba(60,170,170,.3);color:var(--t);font-size:.63rem;font-weight:600;padding:1px 6px;border-radius:20px;margin-left:6px;vertical-align:middle}
+.uzone{border:2px dashed var(--t);border-radius:11px;background:var(--tl);padding:38px 18px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+.uzone:hover,.uzone.dov{background:rgba(60,170,170,.2);transform:translateY(-1px)}
+.uzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.uzone h3{font-size:.92rem;font-weight:600;margin-bottom:4px}
+.uzone p{font-size:.78rem;color:var(--mu)}
+.fprev{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:11px 14px;display:flex;align-items:center;gap:10px;margin-top:10px}
+.fprev-ico{font-size:1.6rem;flex-shrink:0}
+.fprev-info{flex:1;min-width:0}
+.fprev-name{font-size:.83rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fprev-sz{font-size:.7rem;color:var(--mu);margin-top:1px}
+.clr{background:none;border:none;color:var(--mu);font-size:1rem;cursor:pointer;padding:3px;border-radius:5px;transition:color .15s}
+.clr:hover{color:var(--o)}
+.spinner{width:20px;height:20px;border:3px solid rgba(60,170,170,.22);border-top-color:var(--t);border-radius:50%;animation:sp .8s linear infinite;flex-shrink:0}
+@keyframes sp{to{transform:rotate(360deg)}}
+.ldrow{display:none;align-items:center;gap:11px;background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:13px 16px;margin-top:11px}
+.ldrow.show{display:flex}
+.ldtxt{font-size:.83rem;color:var(--mu)}.ldtxt strong{color:var(--t)}
+.or-div{display:flex;align-items:center;gap:9px;margin:14px 0 0;color:var(--mu);font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+.or-div::before,.or-div::after{content:'';flex:1;height:1px;background:var(--bd)}
+.btn-big{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border:none;border-radius:var(--r);font-family:'Inter',sans-serif;font-size:.94rem;font-weight:700;cursor:pointer;letter-spacing:.04em;transition:transform .15s,box-shadow .2s,filter .2s;margin-top:13px}
+.btn-big:hover:not(:disabled){transform:translateY(-2px);filter:brightness(1.08)}
+.btn-big:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-org{background:linear-gradient(135deg,var(--o),rgb(240,120,50));color:#fff;box-shadow:0 4px 18px rgba(220,90,30,.33)}
+.btn-org:hover:not(:disabled){box-shadow:0 8px 26px rgba(220,90,30,.43)}
+.btn-teal{background:linear-gradient(135deg,var(--td),var(--t));color:#fff;box-shadow:0 4px 18px rgba(60,170,170,.3)}
+.btn-teal:hover{box-shadow:0 8px 26px rgba(60,170,170,.4)}
+.btn-out{background:var(--s2);border:1px solid var(--bd);color:var(--tx);font-family:'Inter',sans-serif;font-size:.88rem;font-weight:600;border-radius:var(--r);cursor:pointer;padding:12px;transition:border-color .2s,background .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-out:hover{border-color:var(--t);background:var(--tl)}
+.act-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+.tbl{width:100%;border-collapse:collapse;border:1px solid var(--bd);border-radius:8px;overflow:hidden}
+.tbl th{background:var(--t);color:#fff;padding:9px 11px;font-size:.73rem;font-weight:600;text-align:left;text-transform:uppercase;letter-spacing:.05em}
+.tbl td{padding:8px 10px;font-size:.83rem}
+.tbl tr:nth-child(odd){background:var(--s2)}
+.tbl tr:nth-child(even){background:#161a24}
+.tbl td input,.tbl td textarea{width:100%;background:transparent;border:1px solid rgba(255,255,255,.07);border-radius:5px;color:var(--tx);font-family:'Inter',sans-serif;font-size:.81rem;padding:5px 8px;outline:none;transition:border-color .2s}
+.tbl td input:focus,.tbl td textarea:focus{border-color:var(--t)}
+.tbl td textarea{min-height:50px;resize:vertical}
+.int-section{background:var(--s2);border:1px solid rgba(220,90,30,.25);border-radius:8px;padding:14px;margin-top:10px}
+.int-section h4{font-size:.73rem;color:var(--o);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.int-tbl{width:100%;border-collapse:collapse;font-size:.78rem}
+.int-tbl td,.int-tbl th{padding:5px 8px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}
+.int-tbl th{color:var(--mu);font-weight:600;width:38%;white-space:nowrap}
+.int-tbl td{color:var(--tx)}
+.cpblock{background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);padding:18px;margin-top:16px;white-space:pre-wrap;font-family:'Courier New',monospace;font-size:.78rem;color:var(--tx);line-height:1.6;max-height:420px;overflow-y:auto}
+#toast{position:fixed;bottom:24px;right:24px;background:var(--s);border:1px solid var(--t);color:var(--tx);padding:12px 18px;border-radius:9px;font-size:.83rem;font-weight:500;box-shadow:0 8px 26px rgba(0,0,0,.5);display:none;z-index:9999;animation:su .3s ease;max-width:320px}
+@keyframes su{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+.footer-info{text-align:center;font-size:.7rem;color:var(--mu);margin-top:26px;padding-top:16px;border-top:1px solid var(--bd)}
+@media(max-width:600px){.grid2,.act-row{grid-template-columns:1fr}.hero h1{font-size:1.25rem}}
+</style>
 </head>
 <body>
 
-<!-- SETTINGS BAR -->
-<div class="settings-bar">
+<div class="sbar">
   <label>OpenAI API Key</label>
-  <input type="password" id="apiKeyInput" placeholder="sk-proj-..." autocomplete="off" oninput="saveKey()"/>
-  <span class="key-status missing" id="keyStatus">Not set</span>
+  <input type="password" id="apiKey" placeholder="sk-proj-..." oninput="saveKey()"/>
+  <span class="kst no" id="kst">Not set</span>
 </div>
 
-<!-- TOP NAV -->
 <div class="topbar">
-  <img id="nav-logo" src="ulink-logo.png" alt="Ulink Assist" onerror="this.style.display='none'"/>
-  <div class="topbar-title">
-    <span>Ulink Assist</span>
-    <span>Singapore Insurance TPA</span>
-  </div>
-  <div class="topbar-badge">Pre-Claim AI Tool</div>
+  <img id="nav-logo" src="ulink-logo.png" alt="Ulink" onerror="this.style.display='none'"/>
+  <div class="tbr"><span>Ulink Assist</span><span>Singapore Insurance TPA</span></div>
+  <div class="tbadge">Pre-Claim Engine</div>
 </div>
 
-<!-- HERO -->
 <div class="hero">
-  <h1>Pre-Claim <span>AI Assessment</span> Generator</h1>
-  <p>Upload a medical document (PDF or image) — AI analyses it and auto-generates the full pre-claim assessment. Review, edit, then download your PDF.</p>
+  <h1>Pre-Claim <span>Assessment Engine</span></h1>
+  <p>Upload a medical document OR type case details — AI generates the full assessment with internal summary, client report, PDF and email template.</p>
 </div>
 
-<div class="container">
+<div class="wrap">
 
-  <!-- ─── STEP 1: UPLOAD ─── -->
+  <!-- INPUT CARD -->
   <div class="card">
-    <div class="card-header">
-      <div class="card-num">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      </div>
-      <div class="card-title">Upload Medical Document</div>
-    </div>
+    <div class="ch"><div class="cn">↑</div><div class="ct">Upload Document or Enter Case Details</div></div>
 
-    <div class="upload-zone" id="dropZone">
+    <div class="uzone" id="dropZone">
       <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.webp"/>
-      <div class="upload-icon">📄</div>
-      <h3>Drop document here, or click to browse</h3>
-      <p>AI will read and analyse the document automatically</p>
-      <div class="type-pills">
-        <span class="type-pill">PDF</span>
-        <span class="type-pill">JPG</span>
-        <span class="type-pill">PNG</span>
-      </div>
+      <div style="font-size:2.4rem;margin-bottom:8px">📄</div>
+      <h3>Drop PDF or image here, or click to browse</h3>
+      <p>AI will extract and analyse automatically</p>
     </div>
 
-    <div class="file-preview" id="filePreview" style="display:none">
-      <div class="file-prev-icon" id="fIcon">📄</div>
-      <div class="file-prev-info">
-        <div class="file-prev-name" id="fName">—</div>
-        <div class="file-prev-size" id="fSize">—</div>
-      </div>
-      <button class="btn-clear" onclick="clearFile()" title="Remove">✕</button>
+    <div class="fprev" id="fprev" style="display:none">
+      <div class="fprev-ico" id="fico">📄</div>
+      <div class="fprev-info"><div class="fprev-name" id="fname">—</div><div class="fprev-sz" id="fsz">—</div></div>
+      <button class="clr" onclick="clearFile()">✕</button>
     </div>
 
-    <div class="ai-status" id="aiStatus">
+    <div class="or-div">or enter case details manually</div>
+
+    <div class="grid2" style="margin-top:14px">
+      <div class="field"><label>Condition / Diagnosis</label><input type="text" id="m_cond" placeholder="e.g. Urinary Tract Infection"/></div>
+      <div class="field"><label>Procedure</label><input type="text" id="m_proc" placeholder="e.g. Cystoscopy Without Biopsy"/></div>
+      <div class="field" style="grid-column:1/-1"><label>Hospital</label><input type="text" id="m_hosp" placeholder="e.g. Mount Elizabeth Hospital"/></div>
+    </div>
+
+    <div class="ldrow" id="ldrow">
       <div class="spinner"></div>
-      <div class="status-text"><strong id="sTitle">Sending to AI…</strong><br><span id="sSub">Please wait.</span></div>
+      <div class="ldtxt"><strong id="ltitle">Sending to AI…</strong><br><span id="lsub">Please wait.</span></div>
     </div>
 
-    <button class="btn-analyse" id="btnAnalyse" onclick="analyseDoc()" disabled>
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      Analyse with AI
+    <button class="btn-big btn-org" id="btnAna" onclick="analyseDoc()">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Analyse &amp; Generate Assessment
     </button>
-
-    <div class="or-div">or fill in manually below</div>
   </div>
 
-  <!-- ─── CASE INFORMATION ─── -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-num">0</div>
-      <div class="card-title">Case Information <span id="b0"></span></div>
+  <!-- RESULTS -->
+  <div id="results" style="display:none">
+
+    <!-- INTERNAL SUMMARY -->
+    <div class="card">
+      <div class="ch"><div class="cn" style="background:var(--o)">★</div><div class="ct">Internal Summary <span class="int-badge">INTERNAL USE ONLY</span></div></div>
+      <div id="intSum"></div>
     </div>
-    <div class="form-grid c2">
-      <div class="field"><label>Report Date</label><input type="date" id="f_date"/></div>
-      <div class="field"><label>Hospital Type</label>
-        <select id="f_hospType">
-          <option value="Private">Private</option>
-          <option value="Public">Public</option>
-        </select>
+
+    <!-- CASE INFO -->
+    <div class="card">
+      <div class="ch"><div class="cn">0</div><div class="ct">Case Information <span id="b0"></span></div></div>
+      <div class="grid2">
+        <div class="field"><label>Report Date</label><input type="date" id="f_date"/></div>
+        <div class="field"><label>Hospital Type</label><select id="f_hospType"><option>Private</option><option>Public/Restructured</option></select></div>
+        <div class="field"><label>Hospital</label><input type="text" id="f_hosp" placeholder="Hospital name"/></div>
+        <div class="field"><label>Country</label><input type="text" id="f_country" value="Singapore"/></div>
+        <div class="field"><label>Condition / Diagnosis</label><input type="text" id="f_cond"/></div>
+        <div class="field"><label>Proposed Procedure</label><input type="text" id="f_proc"/></div>
       </div>
-      <div class="field"><label>Hospital Name</label><input type="text" id="f_hospital" placeholder="e.g. Mount Elizabeth Novena"/></div>
-      <div class="field"><label>Condition / Diagnosis</label><input type="text" id="f_condition" placeholder="e.g. Carpal Tunnel Syndrome"/></div>
-      <div class="field" style="grid-column:1/-1"><label>Proposed Procedure</label><input type="text" id="f_procedure" placeholder="e.g. Carpal Tunnel Release"/></div>
     </div>
-  </div>
 
-  <!-- ─── SECTION 1 ─── -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-num">1</div>
-      <div class="card-title">General Exclusion Check <span id="b1"></span></div>
+    <!-- S1 -->
+    <div class="card">
+      <div class="ch"><div class="cn">1</div><div class="ct">General Exclusion Check <span id="b1"></span></div></div>
+      <div class="field"><label>Assessment</label><textarea id="s1" rows="3"></textarea></div>
     </div>
-    <div class="field">
-      <label>Exclusion Assessment Remarks</label>
-      <textarea id="s1" rows="5" placeholder="Describe applicable policy exclusions, waiting periods, or eligibility concerns…"></textarea>
-    </div>
-  </div>
 
-  <!-- ─── SECTION 2 ─── -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-num">2</div>
-      <div class="card-title">Medical Necessity Assessment <span id="b2"></span></div>
+    <!-- S2 -->
+    <div class="card">
+      <div class="ch"><div class="cn">2</div><div class="ct">Medical Necessity Assessment <span id="b2"></span></div></div>
+      <table class="tbl">
+        <thead><tr><th style="width:22%">Outcome</th><th style="width:18%">Likelihood</th><th>Reasoning</th></tr></thead>
+        <tbody>
+          <tr><td><input id="o1"/></td><td><input id="l1"/></td><td><textarea id="r1"></textarea></td></tr>
+          <tr><td><input id="o2"/></td><td><input id="l2"/></td><td><textarea id="r2"></textarea></td></tr>
+          <tr><td><input id="o3"/></td><td><input id="l3"/></td><td><textarea id="r3"></textarea></td></tr>
+        </tbody>
+      </table>
     </div>
-    <table class="ntable">
-      <thead><tr>
-        <th style="width:22%">Outcome</th>
-        <th style="width:18%">Likelihood</th>
-        <th>Reasoning</th>
-      </tr></thead>
-      <tbody>
-        <tr>
-          <td><input type="text" id="o1" placeholder="e.g. Likely Covered"/></td>
-          <td><input type="text" id="l1" placeholder="e.g. 70–90%"/></td>
-          <td><textarea id="r1" placeholder="Clinical justification…"></textarea></td>
-        </tr>
-        <tr>
-          <td><input type="text" id="o2" placeholder="e.g. Borderline"/></td>
-          <td><input type="text" id="l2" placeholder="e.g. 10–20%"/></td>
-          <td><textarea id="r2" placeholder="Clinical justification…"></textarea></td>
-        </tr>
-        <tr>
-          <td><input type="text" id="o3" placeholder="e.g. Unlikely Covered"/></td>
-          <td><input type="text" id="l3" placeholder="e.g. 0–5%"/></td>
-          <td><textarea id="r3" placeholder="Clinical justification…"></textarea></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
 
-  <!-- ─── SECTION 3 ─── -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-num">3</div>
-      <div class="card-title">Pre-Existing Condition (PEC) Assessment <span id="b3"></span></div>
+    <!-- S3 PEC -->
+    <div class="card">
+      <div class="ch"><div class="cn">3</div><div class="ct">Pre-Existing Condition (PEC) Assessment <span id="b3"></span></div></div>
+      <table class="tbl">
+        <thead><tr><th style="width:30%">Policy Duration</th><th>Assessment</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--t);font-weight:600">Less than 1 year</td><td><textarea id="pec1" rows="2"></textarea></td></tr>
+          <tr><td style="color:var(--t);font-weight:600">1 – 2 years</td><td><textarea id="pec2" rows="2"></textarea></td></tr>
+          <tr><td style="color:var(--t);font-weight:600">More than 2 years</td><td><textarea id="pec3" rows="2"></textarea></td></tr>
+        </tbody>
+      </table>
     </div>
-    <div class="field"><label>PEC Remarks</label>
-      <textarea id="s3" rows="5" placeholder="Document pre-existing conditions, policy duration impact, and evidence required…"></textarea>
-    </div>
-  </div>
 
-  <!-- ─── SECTION 4 ─── -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-num">4</div>
-      <div class="card-title">Reasonable &amp; Customary (R&amp;C) Cost Estimate <span id="b4"></span></div>
+    <!-- S4 R&C -->
+    <div class="card">
+      <div class="ch"><div class="cn">4</div><div class="ct">R&amp;C Benchmark <span id="b4"></span></div></div>
+      <div class="grid2" style="gap:10px">
+        <div class="field"><label>TOSP Code</label><input id="tosp_code"/></div>
+        <div class="field"><label>Table of Surgery</label><input id="tosp_table"/></div>
+        <div class="field"><label>Private Hospital Range</label><input id="rc_private"/></div>
+        <div class="field"><label>Public Hospital Range</label><input id="rc_public"/></div>
+        <div class="field"><label>P50 Estimate</label><input id="p50"/></div>
+        <div class="field"><label>P75 Estimate</label><input id="p75"/></div>
+        <div class="field"><label>P90 Estimate</label><input id="p90"/></div>
+      </div>
     </div>
-    <div class="field"><label>R&amp;C Estimate Details</label>
-      <textarea id="s4" rows="5" placeholder="TOSP code, SGD cost ranges for private and public hospitals, deviation analysis…"></textarea>
+
+    <!-- S5 LOG -->
+    <div class="card">
+      <div class="ch"><div class="cn">5</div><div class="ct">LOG Recommendation <span id="b5"></span></div></div>
+      <div class="field"><label>Recommendation</label><textarea id="log_rec" rows="2"></textarea></div>
     </div>
-  </div>
 
-  <!-- ─── SECTION 5 ─── -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-num">5</div>
-      <div class="card-title">Letter of Guarantee (LOG) Recommendation <span id="b5"></span></div>
+    <!-- EMAIL -->
+    <div class="card">
+      <div class="ch"><div class="cn">✉</div><div class="ct">Email Template <span id="b6"></span></div></div>
+      <div class="field" style="margin-bottom:10px"><label>Subject</label><input id="email_sub"/></div>
+      <div class="field"><label>Body</label><textarea id="email_body" rows="8"></textarea></div>
     </div>
-    <div class="field"><label>LOG Recommendation</label>
-      <textarea id="s5" rows="5" placeholder="LOG recommendation, approved SGD range, conditions, and insurer/hospital remarks…"></textarea>
+
+    <!-- ACTION BUTTONS -->
+    <div class="act-row">
+      <button class="btn-big btn-teal" onclick="generatePDF()" style="margin-top:0">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 15V3m0 12l-4-4m4 4l4-4"/><rect x="3" y="17" width="18" height="4" rx="2"/></svg>
+        Download PDF
+      </button>
+      <button class="btn-out" onclick="copyClient()">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy Client Summary
+      </button>
     </div>
-  </div>
 
-  <!-- ─── ACTION BUTTONS ─── -->
-  <button class="btn-generate" onclick="generatePDF()">
-    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12l-4-4m4 4l4-4"/><rect x="3" y="17" width="18" height="4" rx="2"/></svg>
-    Generate &amp; Download PDF
-  </button>
+    <!-- COPY BLOCK FALLBACK -->
+    <div id="cpWrap" style="display:none">
+      <div class="ch" style="margin-top:18px;margin-bottom:8px"><div class="ct">Copy Block (PDF Fallback)</div></div>
+      <div class="cpblock" id="cpblock"></div>
+      <button class="btn-out" style="margin-top:8px;width:100%" onclick="copyBlock()">
+        📋 Copy — Paste into Word → Save as PDF
+      </button>
+    </div>
 
-  <button class="btn-copy" onclick="copyClientSummary()">
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-    Copy Client Summary (for Word)
-  </button>
+  </div><!-- /results -->
 
-  <div class="footer-info">
-    Ulink Assist Pre-Claim Assessment Tool &nbsp;|&nbsp; www.ulinkassist.com &nbsp;|&nbsp; AI-Powered · Data stays on your device
-  </div>
+  <div class="footer-info">Ulink Assist Pre-Claim Assessment Engine &nbsp;|&nbsp; www.ulinkassist.com &nbsp;|&nbsp; Powered by AI</div>
 </div>
 
 <div id="toast"></div>
-
 <script>
-// ─────────────────────────────────────────
-//  PDF.js worker
-// ─────────────────────────────────────────
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const T=[60,170,170],O=[220,90,30],DK=[60,60,60],LG=[235,238,242],MG=[200,208,218];
+let logoB64=null,uploadedFile=null;
 
-// ─────────────────────────────────────────
-//  API KEY — localStorage
-// ─────────────────────────────────────────
-const keyInput  = document.getElementById('apiKeyInput');
-const keyStatus = document.getElementById('keyStatus');
-
-function saveKey() {
-  const v = keyInput.value.trim();
-  localStorage.setItem('oai_key', v);
-  updateKeyStatus(v);
-}
-function loadKey() {
-  const v = localStorage.getItem('oai_key') || '';
-  keyInput.value = v;
-  updateKeyStatus(v);
-}
-function updateKeyStatus(v) {
-  if (v && v.startsWith('sk-')) {
-    keyStatus.textContent = '✓ Key saved';
-    keyStatus.className = 'key-status set';
-  } else {
-    keyStatus.textContent = 'Not set';
-    keyStatus.className = 'key-status missing';
-  }
-}
+// Key mgmt
+function saveKey(){const v=document.getElementById('apiKey').value.trim();localStorage.setItem('oai_k',v);updateKSt(v);}
+function loadKey(){const v=localStorage.getItem('oai_k')||'';document.getElementById('apiKey').value=v;updateKSt(v);}
+function updateKSt(v){const el=document.getElementById('kst');if(v&&v.startsWith('sk-')){el.textContent='✓ Saved';el.className='kst ok';}else{el.textContent='Not set';el.className='kst no';}}
 loadKey();
 
-// ─────────────────────────────────────────
-//  Auto-fill today's date
-// ─────────────────────────────────────────
-(function(){
-  const d=new Date(), pad=n=>String(n).padStart(2,'0');
-  document.getElementById('f_date').value=
-    `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-})();
+// Date
+(()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');document.getElementById('f_date').value=`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;})();
 
-// ─────────────────────────────────────────
-//  Logo
-// ─────────────────────────────────────────
-let logoB64 = null;
-(async()=>{
-  try{
-    const r=await fetch('ulink-logo.png');
-    if(!r.ok) throw 0;
-    const blob=await r.blob();
-    const fr=new FileReader();
-    fr.onload=e=>{logoB64=e.target.result;};
-    fr.readAsDataURL(blob);
-  }catch(_){}
-})();
+// Logo
+(async()=>{try{const r=await fetch('ulink-logo.png');if(!r.ok)throw 0;const b=await r.blob();const fr=new FileReader();fr.onload=e=>logoB64=e.target.result;fr.readAsDataURL(b);}catch(_){}})();
 
-// ─────────────────────────────────────────
-//  FILE UPLOAD
-// ─────────────────────────────────────────
-let uploadedFile = null;
-const dropZone   = document.getElementById('dropZone');
-const fileInput  = document.getElementById('fileInput');
-
-dropZone.addEventListener('dragover', e=>{e.preventDefault();dropZone.classList.add('drag-over')});
-dropZone.addEventListener('dragleave', ()=>dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e=>{
-  e.preventDefault(); dropZone.classList.remove('drag-over');
-  if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
-});
-fileInput.addEventListener('change', ()=>{ if(fileInput.files[0]) handleFile(fileInput.files[0]); });
+// File upload
+const dz=document.getElementById('dropZone'),fi=document.getElementById('fileInput');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dov');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('dov'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dov');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});
+fi.addEventListener('change',()=>{if(fi.files[0])handleFile(fi.files[0]);});
 
 function handleFile(f){
   const ok=['application/pdf','image/jpeg','image/jpg','image/png','image/webp'];
-  if(!ok.includes(f.type)){ toast('❌ Only PDF, JPG, or PNG files accepted.','var(--org)'); return; }
-  uploadedFile = f;
-  document.getElementById('fIcon').textContent = f.type==='application/pdf'?'📄':'🖼️';
-  document.getElementById('fName').textContent = f.name;
-  document.getElementById('fSize').textContent = fmtBytes(f.size);
-  document.getElementById('filePreview').style.display='flex';
-  dropZone.style.display='none';
-  document.getElementById('btnAnalyse').disabled=false;
+  if(!ok.includes(f.type)){toast('❌ PDF, JPG or PNG only','var(--o)');return;}
+  uploadedFile=f;
+  document.getElementById('fico').textContent=f.type==='application/pdf'?'📄':'🖼️';
+  document.getElementById('fname').textContent=f.name;
+  document.getElementById('fsz').textContent=f.size<1048576?(f.size/1024).toFixed(1)+' KB':(f.size/1048576).toFixed(1)+' MB';
+  document.getElementById('fprev').style.display='flex';
+  dz.style.display='none';
 }
+function clearFile(){uploadedFile=null;fi.value='';document.getElementById('fprev').style.display='none';dz.style.display='block';}
 
-function clearFile(){
-  uploadedFile=null; fileInput.value='';
-  document.getElementById('filePreview').style.display='none';
-  dropZone.style.display='block';
-  document.getElementById('btnAnalyse').disabled=true;
-  document.getElementById('aiStatus').classList.remove('show');
-}
+// Build messages
+const SYS=`You are Ulink Pre-Claim Assessment AI for Singapore insurance.
+Analyse the input and return ONLY a valid JSON object with these exact keys:
+{"date":"DD Month YYYY","condition":"","procedure":"","hospital":"","hospType":"Private or Public/Restructured","country":"Singapore","s1":"1-2 sentence general exclusion check","o1":"Medically Necessary","l1":"70-85%","r1":"reasoning","o2":"Borderline","l2":"10-20%","r2":"reasoning","o3":"Not Medically Necessary","l3":"0-5%","r3":"reasoning","pec1":"Less than 1 year assessment","pec2":"1-2 years assessment","pec3":"More than 2 years assessment","tosp_code":"closest TOSP code","tosp_table":"Table number","rc_private":"SGD X,XXX - X,XXX","rc_public":"SGD X,XXX - X,XXX","p50":"SGD X,XXX","p75":"SGD X,XXX","p90":"SGD X,XXX","log_rec":"one sentence LOG recommendation SGD range","email_subject":"Pre-Claim Assessment - [Condition]","email_body":"full professional email body"}
+Hospital rules: Mount Elizabeth/Gleneagles/Parkway/Raffles/Farrer Park=Private. SGH/NUH/TTSH/KKH/CGH/SKH=Public/Restructured. Unknown=Private.
+Use plain hyphens only. Return ONLY JSON.`;
 
-function fmtBytes(b){ return b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB'; }
-
-// ─────────────────────────────────────────
-//  ANALYSE DOCUMENT
-// ─────────────────────────────────────────
-async function analyseDoc(){
-  const apiKey = (localStorage.getItem('oai_key')||'').trim();
-  if(!apiKey||!apiKey.startsWith('sk-')){
-    toast('⚠️ Please enter your OpenAI API key above.','var(--org)'); return;
-  }
-  if(!uploadedFile){ toast('⚠️ Please upload a document first.','var(--org)'); return; }
-
-  setAnalysing(true,'Reading document…','Extracting content…');
-
-  try{
-    let messages;
+async function buildContent(){
+  if(uploadedFile){
+    const b64=await fileToB64(uploadedFile);
+    const d=b64.split(',')[1];
     if(uploadedFile.type==='application/pdf'){
-      setStatus('Extracting PDF text…','Using PDF.js to read document…');
-      const text = await extractPDFText(uploadedFile);
-      if(!text||text.length<20) throw new Error('Could not read PDF text. Try uploading an image instead.');
-      messages = buildTextMessages(text);
+      const txt=await extractPDF(uploadedFile);
+      return`Analyse this medical document text:\n\n${txt.slice(0,6000)}`;
     } else {
-      setStatus('Sending image to AI…','GPT-4o Vision reading document…');
-      const b64 = await fileToBase64(uploadedFile);
-      messages = buildImageMessages(b64, uploadedFile.type);
+      return[{type:'image_url',image_url:{url:b64,detail:'high'}},{type:'text',text:'Analyse this medical document image and return the assessment JSON.'}];
     }
-
-    setStatus('AI analysing…','Generating pre-claim assessment…');
-    const raw = await callOpenAI(apiKey, messages);
-    setStatus('Populating form…','Auto-filling all sections…');
-    await delay(400);
-
-    const data = parseJSON(raw);
-    fillForm(data);
-    setAnalysing(false);
-    toast('✅ AI analysis complete! Review and generate your PDF.');
-
-  } catch(e){
-    setAnalysing(false);
-    toast('❌ '+(e.message||'Analysis failed.'),'var(--org)');
-    console.error(e);
   }
+  const c=document.getElementById('m_cond').value.trim();
+  const p=document.getElementById('m_proc').value.trim();
+  const h=document.getElementById('m_hosp').value.trim();
+  if(!c&&!p&&!h){throw new Error('Please upload a file OR enter case details.');}
+  return`Analyse this case:\nCondition: ${c||'Unknown'}\nProcedure: ${p||'Unknown'}\nHospital: ${h||'Unknown'}`;
 }
 
-// ─── Extract PDF text via PDF.js ───
-async function extractPDFText(file){
-  const ab  = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({data:ab}).promise;
-  let text  = '';
-  for(let i=1;i<=pdf.numPages;i++){
-    const page    = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    text += content.items.map(s=>s.str).join(' ')+'\n';
-  }
-  return text.trim();
+function fileToB64(f){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=e=>res(e.target.result);fr.onerror=rej;fr.readAsDataURL(f);});}
+
+async function extractPDF(f){
+  const ab=await f.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:ab}).promise;
+  let t='';
+  for(let i=1;i<=pdf.numPages;i++){const pg=await pdf.getPage(i);const ct=await pg.getTextContent();t+=ct.items.map(s=>s.str).join(' ')+'\n';}
+  return t.trim();
 }
 
-// ─── File to base64 ───
-function fileToBase64(file){
-  return new Promise((res,rej)=>{
-    const fr=new FileReader();
-    fr.onload=e=>res(e.target.result);
-    fr.onerror=rej;
-    fr.readAsDataURL(file);
-  });
-}
-
-// ─── Build message arrays ───
-const SYSTEM_PROMPT = `You are an insurance pre-claim assessment specialist for Singapore.
-Analyse the uploaded document and extract: Condition, Procedure, Hospital.
-Then generate a full pre-claim assessment with these exact sections:
-- General Exclusion Check
-- Medical Necessity (3 rows: Likely Covered 70-90%, Borderline 10-20%, Unlikely Covered 0-5% with reasoning for each)
-- PEC Assessment (3 policy durations)
-- R&C Estimate (SGD ranges private and public)
-- LOG Recommendation (SGD range)
-Return ONLY valid JSON with keys:
-date, condition, procedure, hospital, hospType,
-s1, o1, l1, r1, o2, l2, r2, o3, l3, r3, s3, s4, s5
-
-Where date=today's date (DD MMM YYYY), hospType=Private or Public,
-s1=general exclusion text, o1/l1/r1=row1 outcome/likelihood/reasoning, etc,
-s3=PEC assessment, s4=R&C estimate, s5=LOG recommendation.`;
-
-function buildTextMessages(text){
-  return [
-    {role:'system', content:SYSTEM_PROMPT},
-    {role:'user',   content:`Document text:\n\n${text.slice(0,7000)}`}
-  ];
-}
-function buildImageMessages(dataUrl, mime){
-  return [
-    {role:'system', content:SYSTEM_PROMPT},
-    {role:'user',   content:[
-      {type:'text',      text:'Analyse this medical document:'},
-      {type:'image_url', image_url:{url:dataUrl, detail:'high'}}
-    ]}
-  ];
-}
-
-// ─── OpenAI API call ───
-async function callOpenAI(apiKey, messages){
-  const res = await fetch('https://api.openai.com/v1/chat/completions',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-    body:JSON.stringify({
-      model:'gpt-4o',
-      temperature:0.2,
-      max_tokens:2500,
-      messages
-    })
-  });
-  if(!res.ok){
-    const err=await res.json().catch(()=>({}));
-    throw new Error(err.error?.message||`API error ${res.status}`);
-  }
-  const j=await res.json();
-  return j.choices?.[0]?.message?.content||'';
-}
-
-// ─── Parse JSON from AI ───
-function parseJSON(raw){
-  let t=raw.trim()
-    .replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
-  const s=t.indexOf('{'), e=t.lastIndexOf('}');
-  if(s!==-1&&e!==-1) t=t.slice(s,e+1);
-  return JSON.parse(t);
-}
-
-// ─── Auto-fill form ───
-function fillForm(d){
-  const badge='<span class="ai-badge">✦ AI</span>';
-  function set(id,val){
-    const el=document.getElementById(id);
-    if(el&&val){el.value=val;el.classList.add('ai-filled');}
-  }
-  // Date
-  if(d.date){
-    // Try to parse AI date (e.g. "12 Mar 2026") → "2026-03-12"
-    try{
-      const pd=new Date(d.date);
-      if(!isNaN(pd)){
-        const pad=n=>String(n).padStart(2,'0');
-        set('f_date',`${pd.getFullYear()}-${pad(pd.getMonth()+1)}-${pad(pd.getDate())}`);
-      }
-    }catch(_){}
-  }
-  set('f_hospital', d.hospital);
-  if(d.hospType){
-    const sel=document.getElementById('f_hospType');
-    const opt=[...sel.options].find(o=>o.value.toLowerCase()===d.hospType.toLowerCase());
-    if(opt){sel.value=opt.value;sel.classList.add('ai-filled');}
-  }
-  set('f_condition', d.condition);
-  set('f_procedure', d.procedure);
-  set('s1', d.s1);
-  set('o1', d.o1); set('l1', d.l1); set('r1', d.r1);
-  set('o2', d.o2); set('l2', d.l2); set('r2', d.r2);
-  set('o3', d.o3); set('l3', d.l3); set('r3', d.r3);
-  set('s3', d.s3); set('s4', d.s4); set('s5', d.s5);
-  ['b0','b1','b2','b3','b4','b5'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.innerHTML=badge;
-  });
-}
-
-// ─── UI helpers ───
-function setAnalysing(on,title='',sub=''){
-  document.getElementById('btnAnalyse').disabled=on;
-  const s=document.getElementById('aiStatus');
-  if(on){s.classList.add('show');setStatus(title,sub);}
-  else s.classList.remove('show');
-}
-function setStatus(t,s){
-  document.getElementById('sTitle').textContent=t;
-  document.getElementById('sSub').textContent=s;
-}
-function delay(ms){return new Promise(r=>setTimeout(r,ms));}
-
-// ─────────────────────────────────────────
-//  COPY CLIENT SUMMARY
-// ─────────────────────────────────────────
-function copyClientSummary(){
-  const g=id=>document.getElementById(id)?.value?.trim()||'—';
-  const lines=[
-    'ULINK ASSIST — PRE-CLAIM ASSESSMENT SUMMARY',
-    '='.repeat(50),
-    `Date: ${formatDisplayDate(g('f_date'))}`,
-    `Hospital: ${g('f_hospital')} (${g('f_hospType')})`,
-    `Condition: ${g('f_condition')}`,
-    `Procedure: ${g('f_procedure')}`,
-    '',
-    '1. GENERAL EXCLUSION CHECK',
-    g('s1'),
-    '',
-    '2. MEDICAL NECESSITY ASSESSMENT',
-    `Outcome           | Likelihood | Reasoning`,
-    '-'.repeat(60),
-    `${g('o1').padEnd(17)}| ${g('l1').padEnd(10)}| ${g('r1')}`,
-    `${g('o2').padEnd(17)}| ${g('l2').padEnd(10)}| ${g('r2')}`,
-    `${g('o3').padEnd(17)}| ${g('l3').padEnd(10)}| ${g('r3')}`,
-    '',
-    '3. PRE-EXISTING CONDITION (PEC) ASSESSMENT',
-    g('s3'),
-    '',
-    '4. REASONABLE & CUSTOMARY (R&C) ESTIMATE',
-    g('s4'),
-    '',
-    '5. LETTER OF GUARANTEE (LOG) RECOMMENDATION',
-    g('s5'),
-    '',
-    '─'.repeat(50),
-    'Ulink Assist | www.ulinkassist.com',
-    'DISCLAIMER: This assessment is for internal use only and does not constitute final claim approval.',
-  ];
-  navigator.clipboard.writeText(lines.join('\n'))
-    .then(()=>toast('✅ Copied to clipboard! Paste into Word.'))
-    .catch(()=>toast('❌ Copy failed. Try again.','var(--org)'));
-}
-
-// ─────────────────────────────────────────
-//  PDF GENERATION
-// ─────────────────────────────────────────
-const TEAL  =[60,170,170], ORANGE=[220,90,30], DARK=[60,60,60];
-const LGRAY =[235,238,242], MGRAY=[200,208,218];
-
-function formatDisplayDate(raw){
-  if(!raw) return '—';
+async function analyseDoc(){
+  const key=(localStorage.getItem('oai_k')||'').trim();
+  if(!key||!key.startsWith('sk-')){toast('⚠️ Enter your OpenAI API key above.','var(--o)');return;}
+  setLd(true,'Preparing document…','Extracting content…');
   try{
-    const [y,m,d]=raw.split('-');
-    const mon=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return `${parseInt(d)} ${mon[parseInt(m)-1]} ${y}`;
-  }catch(_){return raw;}
+    const content=await buildContent();
+    setLd(true,'Analysing with AI…','GPT-4o generating pre-claim assessment…');
+    const messages=[{role:'system',content:SYS},{role:'user',content:content}];
+    const res=await fetch('https://api.openai.com/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({model:'gpt-4o',temperature:0.2,max_tokens:2500,messages})
+    });
+    if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'API error '+res.status);}
+    const j=await res.json();
+    const raw=j.choices?.[0]?.message?.content||'';
+    let t=raw.trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
+    const s=t.indexOf('{'),en=t.lastIndexOf('}');
+    if(s!==-1&&en!==-1)t=t.slice(s,en+1);
+    const d=JSON.parse(t);
+    setLd(true,'Populating assessment…','Auto-filling all sections…');
+    await new Promise(r=>setTimeout(r,400));
+    fillForm(d);
+    document.getElementById('results').style.display='block';
+    document.getElementById('results').scrollIntoView({behavior:'smooth'});
+    setLd(false);
+    toast('✅ Assessment complete! Review and download your PDF.');
+  }catch(e){setLd(false);toast('❌ '+(e.message||'Failed'),'var(--o)');console.error(e);}
 }
 
-function wrapText(doc,text,x,y,maxW,lh,pH,hH,fH,dH,dF,pn){
-  const lines=doc.splitTextToSize(text||'',maxW);
-  for(let i=0;i<lines.length;i++){
-    if(y+lh>pH-fH-6){dF(doc,pn[0]);doc.addPage();pn[0]++;dH(doc);dF(doc,pn[0]);y=hH+12;}
-    doc.text(lines[i],x,y); y+=lh;
-  }
-  return y;
+function setLd(on,title='',sub=''){
+  document.getElementById('btnAna').disabled=on;
+  const l=document.getElementById('ldrow');
+  if(on){l.classList.add('show');document.getElementById('ltitle').textContent=title;document.getElementById('lsub').textContent=sub;}
+  else l.classList.remove('show');
 }
 
+function set(id,val){const el=document.getElementById(id);if(el&&val){el.value=val;el.classList.add('ai-f');}}
+
+function fillForm(d){
+  const bg='<span class="aibg">✦ AI</span>';
+  if(d.date){try{const pd=new Date(d.date);if(!isNaN(pd)){const p=n=>String(n).padStart(2,'0');set('f_date',`${pd.getFullYear()}-${p(pd.getMonth()+1)}-${p(pd.getDate())}`)}}catch(_){}}
+  set('f_hosp',d.hospital);set('f_cond',d.condition);set('f_proc',d.procedure);set('f_country',d.country);
+  if(d.hospType){const s=document.getElementById('f_hospType');const op=[...s.options].find(o=>o.value.toLowerCase().includes(d.hospType.toLowerCase().split('/')[0]));if(op){s.value=op.value;s.classList.add('ai-f');}}
+  set('s1',d.s1);
+  set('o1',d.o1);set('l1',d.l1);set('r1',d.r1);
+  set('o2',d.o2);set('l2',d.l2);set('r2',d.r2);
+  set('o3',d.o3);set('l3',d.l3);set('r3',d.r3);
+  set('pec1',d.pec1);set('pec2',d.pec2);set('pec3',d.pec3);
+  set('tosp_code',d.tosp_code);set('tosp_table',d.tosp_table);
+  set('rc_private',d.rc_private);set('rc_public',d.rc_public);
+  set('p50',d.p50);set('p75',d.p75);set('p90',d.p90);
+  set('log_rec',d.log_rec);set('email_sub',d.email_subject);set('email_body',d.email_body);
+  ['b0','b1','b2','b3','b4','b5','b6'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=bg;});
+  renderInternal(d);
+}
+
+function renderInternal(d){
+  const row=(k,v)=>`<tr><th>${k}</th><td>${v||'—'}</td></tr>`;
+  document.getElementById('intSum').innerHTML=`
+  <div class="int-section"><h4>Case Details</h4><table class="int-tbl">
+    ${row('Condition',d.condition)}${row('Procedure',d.procedure)}${row('Hospital',d.hospital)}${row('Hospital Type',d.hospType)}${row('TOSP Code',d.tosp_code)}${row('Table of Surgery',d.tosp_table)}
+  </table></div>
+  <div class="int-section" style="margin-top:8px"><h4>A. General Exclusion Outcome</h4><p style="font-size:.81rem;color:var(--tx);line-height:1.5">${d.s1||'—'}</p></div>
+  <div class="int-section" style="margin-top:8px"><h4>B. Medical Necessity (Internal Likelihood)</h4><table class="int-tbl">
+    <tr><th>Outcome</th><th>Likelihood</th></tr>
+    <tr><td>${d.o1||'—'}</td><td>${d.l1||'—'}</td></tr>
+    <tr><td>${d.o2||'—'}</td><td>${d.l2||'—'}</td></tr>
+    <tr><td>${d.o3||'—'}</td><td>${d.l3||'—'}</td></tr>
+  </table></div>
+  <div class="int-section" style="margin-top:8px"><h4>C. PEC Risk by Policy Duration</h4><table class="int-tbl">
+    ${row('< 1 year',d.pec1)}${row('1 – 2 years',d.pec2)}${row('> 2 years',d.pec3)}
+  </table></div>
+  <div class="int-section" style="margin-top:8px"><h4>E. R&amp;C Benchmark &amp; Cost Percentiles</h4><table class="int-tbl">
+    ${row('Private Hospital',d.rc_private)}${row('Public/Restructured',d.rc_public)}${row('P50',d.p50)}${row('P75',d.p75)}${row('P90',d.p90)}
+  </table></div>
+  <div class="int-section" style="margin-top:8px"><h4>G. Indicative LOG Recommendation</h4><p style="font-size:.81rem;color:var(--tx)">${d.log_rec||'—'}</p></div>`;
+}
+
+// Copy client summary
+function copyClient(){
+  const g=id=>(document.getElementById(id)?.value||'').trim()||'—';
+  const disp=formatDate(g('f_date'));
+  const U='_'.repeat(62);
+  const txt=[
+    'PRE-CLAIM ASSESSMENT SUMMARY','',
+    `Date: ${disp}`,`Condition: ${g('f_cond')}`,`Procedure: ${g('f_proc')}`,
+    `Hospital: ${g('f_hosp')} (${g('f_country')} - ${g('f_hospType')})`,
+    U,'','1. General Exclusion Check','',g('s1'),'',U,'',
+    '2. Medical Necessity Assessment','',
+    'Outcome                | Likelihood | Reasoning','-'.repeat(62),
+    `${(g('o1')).padEnd(22)}| ${(g('l1')).padEnd(10)}| ${g('r1')}`,
+    `${(g('o2')).padEnd(22)}| ${(g('l2')).padEnd(10)}| ${g('r2')}`,
+    `${(g('o3')).padEnd(22)}| ${(g('l3')).padEnd(10)}| ${g('r3')}`,
+    '',U,'','3. Pre-Existing Condition (PEC) Assessment','',
+    'Policy Duration        | Assessment','-'.repeat(62),
+    `${'Less than 1 year'.padEnd(22)}| ${g('pec1')}`,
+    `${'1 - 2 years'.padEnd(22)}| ${g('pec2')}`,
+    `${'More than 2 years'.padEnd(22)}| ${g('pec3')}`,
+    '',U,'','4. Reasonable & Customary (R&C) Benchmark','',
+    'Item                   | Details','-'.repeat(62),
+    `${'Closest TOSP Code'.padEnd(22)}| ${g('tosp_code')}`,
+    `${'Table of Surgery'.padEnd(22)}| ${g('tosp_table')}`,
+    `${'Private Hospital'.padEnd(22)}| ${g('rc_private')}`,
+    `${'Public Hospital'.padEnd(22)}| ${g('rc_public')}`,
+    '','Estimated Cost Percentiles:',
+    `P50: ${g('p50')}   P75: ${g('p75')}   P90: ${g('p90')}`,
+    '',U,'','5. Indicative LOG Recommendation','',g('log_rec'),'',U,'',
+    'Disclaimer','',
+    'This pre-claim assessment is prepared for guidance only and does not guarantee coverage or claim payment. Final claim outcomes remain subject to insurer review of medical records, policy terms, benefit limits, exclusions, and the final hospital bill.',
+    '',U,'Ulink Assist | www.ulinkassist.com'
+  ].join('\n');
+  const cpb=document.getElementById('cpblock');
+  cpb.textContent=txt;
+  document.getElementById('cpWrap').style.display='block';
+  navigator.clipboard.writeText(txt).then(()=>toast('✅ Copied! Paste into Word.')).catch(()=>toast('Copy failed — use the block above','var(--o)'));
+}
+function copyBlock(){navigator.clipboard.writeText(document.getElementById('cpblock').textContent).then(()=>toast('✅ Copied! Paste into Word → Save as PDF.')).catch(()=>toast('Select all text in the block and copy manually','var(--o)'));}
+function formatDate(raw){if(!raw)return'—';try{const[y,m,d]=raw.split('-');const mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return`${parseInt(d)} ${mn[parseInt(m)-1]} ${y}`;}catch(_){return raw;}}
+
+// PDF generation
 async function generatePDF(){
-  const {jsPDF}=window.jspdf;
-  const g=id=>document.getElementById(id)?.value?.trim()||'—';
+  try{
+    const{jsPDF}=window.jspdf;
+    const g=id=>(document.getElementById(id)?.value||'').trim()||'—';
+    const doc=new jsPDF({unit:'mm',format:'a4'});
+    const pW=210,pH=297,mL=15,mR=15,cW=pW-mL-mR,hH=20,fH=13;
+    const pn=[1];
+    const disp=formatDate(g('f_date'));
 
-  const rawDate  = g('f_date');
-  const hospital = g('f_hospital');
-  const hosType  = g('f_hospType');
-  const cond     = g('f_condition');
-  const proc     = g('f_procedure');
-  const s1       = g('s1');
-  const s2rows   = [
-    {out:g('o1'),pct:g('l1'),rsn:g('r1')},
-    {out:g('o2'),pct:g('l2'),rsn:g('r2')},
-    {out:g('o3'),pct:g('l3'),rsn:g('r3')},
-  ];
-  const s3=g('s3'),s4=g('s4'),s5=g('s5');
-  const dispDate=formatDisplayDate(rawDate);
-
-  const doc=new jsPDF({unit:'mm',format:'a4'});
-  const pW=210,pH=297,mL=16,mR=16,cW=pW-mL-mR,hH=22,fH=14;
-  const pn=[1];
-
-  // ── Draw Header ──
-  function drawH(d){
-    d.setFillColor(...TEAL); d.rect(0,0,pW,hH,'F');
-    if(logoB64){try{d.addImage(logoB64,'PNG',pW-38,2,18,18);}catch(_){}}
-    d.setFont('helvetica','bold'); d.setFontSize(10); d.setTextColor(255,255,255);
-    d.text('Ulink Assist  |  Pre-Claim Assessment Report',mL,14);
-  }
-
-  // ── Draw Footer ──
-  function drawF(d,n){
-    d.setFillColor(...TEAL); d.rect(0,pH-fH,pW,fH,'F');
-    d.setFont('helvetica','normal'); d.setFontSize(7.5); d.setTextColor(255,255,255);
-    d.text('Ulink Assist Pre-Claim Assessment  |  www.ulinkassist.com',mL,pH-5.5);
-    d.text(`Page ${n}`,pW-mR,pH-5.5,{align:'right'});
-  }
-
-  // ── Section heading ──
-  function secHead(d,lbl,y){
-    d.setFont('helvetica','bold'); d.setFontSize(10.5); d.setTextColor(...TEAL);
-    d.text(lbl,mL,y); y+=2.5;
-    d.setDrawColor(...TEAL); d.setLineWidth(0.5); d.line(mL,y,pW-mR,y);
-    return y+6;
-  }
-
-  // ── Body text ──
-  function bodyTxt(d,text,x,y){
-    d.setFont('helvetica','normal'); d.setFontSize(9); d.setTextColor(...DARK);
-    return wrapText(d,text,x,y,cW-(x-mL),5,pH,hH,fH,drawH,drawF,pn);
-  }
-
-  // PAGE 1
-  drawH(doc); drawF(doc,1);
-  let y=hH+10;
-
-  // Orange title
-  doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.setTextColor(...ORANGE);
-  doc.text('Pre-Claim Assessment Summary',mL,y); y+=3;
-  doc.setDrawColor(...ORANGE); doc.setLineWidth(0.8); doc.line(mL,y,pW-mR,y); y+=7;
-
-  // Date
-  doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(120,130,145);
-  doc.text(`Date: ${dispDate}`,pW-mR,y,{align:'right'}); y+=6;
-
-  // Case info box
-  const bH=28;
-  doc.setFillColor(...LGRAY); doc.setDrawColor(...MGRAY); doc.setLineWidth(0.4);
-  doc.roundedRect(mL,y,cW,bH,2,2,'FD');
-  const cA=mL+5, cB=mL+cW/2;
-  doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(100,110,125);
-  doc.text('HOSPITAL',cA,y+7); doc.text('HOSPITAL TYPE',cB,y+7);
-  doc.text('CONDITION / DIAGNOSIS',cA,y+18); doc.text('PROPOSED PROCEDURE',cB,y+18);
-  doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor(...DARK);
-  doc.text(hospital,cA,y+13); doc.text(hosType,cB,y+13);
-  doc.text(doc.splitTextToSize(cond,cW/2-8)[0]||cond,cA,y+24);
-  doc.text(doc.splitTextToSize(proc,cW/2-8)[0]||proc,cB,y+24);
-  y+=bH+10;
-
-  // SECTION 1
-  y=secHead(doc,'Section 1: General Exclusion Check',y);
-  y=bodyTxt(doc,s1,mL,y); y+=8;
-
-  // SECTION 2
-  if(y+60>pH-fH-8){drawF(doc,pn[0]);doc.addPage();pn[0]++;drawH(doc);drawF(doc,pn[0]);y=hH+12;}
-  y=secHead(doc,'Section 2: Medical Necessity Assessment',y);
-  const c1W=48,c2W=26,c3W=cW-c1W-c2W,tX=mL,rH=7;
-  doc.setFillColor(...TEAL); doc.rect(tX,y,cW,rH,'F');
-  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(255,255,255);
-  doc.text('Outcome',tX+3,y+5);
-  doc.text('Likelihood',tX+c1W+3,y+5);
-  doc.text('Reasoning',tX+c1W+c2W+3,y+5);
-  y+=rH;
-  s2rows.forEach((row,idx)=>{
-    doc.setFontSize(8.5);
-    const rl=doc.splitTextToSize(row.rsn||'—',c3W-6);
-    const dH2=Math.max(10,rl.length*4.5+5);
-    if(y+dH2>pH-fH-8){drawF(doc,pn[0]);doc.addPage();pn[0]++;drawH(doc);drawF(doc,pn[0]);y=hH+12;
-      doc.setFillColor(...TEAL);doc.rect(tX,y,cW,rH,'F');
-      doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(255,255,255);
-      doc.text('Outcome',tX+3,y+5);doc.text('Likelihood',tX+c1W+3,y+5);doc.text('Reasoning',tX+c1W+c2W+3,y+5);y+=rH;
+    function dH(d){
+      d.setFillColor(...T);d.rect(0,0,pW,hH,'F');
+      if(logoB64){try{d.addImage(logoB64,'PNG',pW-34,1.5,16,16);}catch(_){}}
+      d.setFont('helvetica','bold');d.setFontSize(9.5);d.setTextColor(255,255,255);
+      d.text('Ulink Assist  |  Pre-Claim Assessment Report',mL,13);
     }
-    doc.setFillColor(...(idx%2===0?[255,255,255]:LGRAY)); doc.rect(tX,y,cW,dH2,'F');
-    doc.setDrawColor(...MGRAY); doc.setLineWidth(0.2);
-    doc.line(tX+c1W,y,tX+c1W,y+dH2); doc.line(tX+c1W+c2W,y,tX+c1W+c2W,y+dH2);
-    doc.rect(tX,y,cW,dH2);
-    doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(...DARK);
-    doc.text(row.out||'—',tX+3,y+6); doc.text(row.pct||'—',tX+c1W+3,y+6);
-    rl.forEach((ln,li)=>doc.text(ln,tX+c1W+c2W+3,y+6+li*4.5));
-    y+=dH2;
-  });
-  y+=9;
+    function dF(d,n){
+      d.setFillColor(...T);d.rect(0,pH-fH,pW,fH,'F');
+      d.setFont('helvetica','normal');d.setFontSize(7.5);d.setTextColor(255,255,255);
+      d.text('Ulink Assist Pre-Claim Assessment  |  www.ulinkassist.com',mL,pH-4.5);
+      d.text('Page '+n,pW-mR,pH-4.5,{align:'right'});
+    }
+    function secH(d,lbl,y){
+      d.setFont('helvetica','bold');d.setFontSize(10);d.setTextColor(...T);d.text(lbl,mL,y);y+=2;
+      d.setDrawColor(...T);d.setLineWidth(0.45);d.line(mL,y,pW-mR,y);return y+5.5;
+    }
+    function wrap(d,txt,x,y,mxW){
+      const ls=d.splitTextToSize(txt||'',mxW);
+      for(let i=0;i<ls.length;i++){if(y+5>pH-fH-6){dF(d,pn[0]);d.addPage();pn[0]++;dH(d);dF(d,pn[0]);y=hH+10;}d.text(ls[i],x,y);y+=5;}
+      return y;
+    }
 
-  // SECTION 3
-  if(y+40>pH-fH-8){drawF(doc,pn[0]);doc.addPage();pn[0]++;drawH(doc);drawF(doc,pn[0]);y=hH+12;}
-  y=secHead(doc,'Section 3: Pre-Existing Condition (PEC) Assessment',y);
-  y=bodyTxt(doc,s3,mL,y); y+=8;
+    dH(doc);dF(doc,1);
+    let y=hH+9;
 
-  // SECTION 4
-  if(y+40>pH-fH-8){drawF(doc,pn[0]);doc.addPage();pn[0]++;drawH(doc);drawF(doc,pn[0]);y=hH+12;}
-  y=secHead(doc,'Section 4: Reasonable & Customary (R&C) Cost Estimate',y);
-  y=bodyTxt(doc,s4,mL,y); y+=8;
+    doc.setFont('helvetica','bold');doc.setFontSize(14);doc.setTextColor(...O);
+    doc.text('Pre-Claim Assessment Summary',mL,y);y+=3;
+    doc.setDrawColor(...O);doc.setLineWidth(0.7);doc.line(mL,y,pW-mR,y);y+=6;
 
-  // SECTION 5
-  if(y+40>pH-fH-8){drawF(doc,pn[0]);doc.addPage();pn[0]++;drawH(doc);drawF(doc,pn[0]);y=hH+12;}
-  y=secHead(doc,'Section 5: Letter of Guarantee (LOG) Recommendation',y);
-  y=bodyTxt(doc,s5,mL,y); y+=10;
+    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(120,130,145);
+    doc.text('Date: '+disp,pW-mR,y,{align:'right'});y+=5;
 
-  // DISCLAIMER
-  if(y+28>pH-fH-8){drawF(doc,pn[0]);doc.addPage();pn[0]++;drawH(doc);drawF(doc,pn[0]);y=hH+12;}
-  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(...ORANGE);
-  doc.text('Disclaimer',mL,y); y+=5;
-  const disc='This pre-claim assessment report is prepared by Ulink Assist for internal reference and underwriting review purposes only. It does not constitute a formal approval, rejection, or guarantee of any insurance claim. Final claim decisions remain subject to the policyholder\'s insurance contract, insurer guidelines, and applicable Singapore regulations. This document is confidential and intended solely for authorised personnel.';
-  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(100,110,125);
-  y=wrapText(doc,disc,mL,y,cW,4.5,pH,hH,fH,drawH,drawF,pn);
+    // Case box
+    const bH=26;doc.setFillColor(...LG);doc.setDrawColor(...MG);doc.setLineWidth(0.35);doc.roundedRect(mL,y,cW,bH,2,2,'FD');
+    const cA=mL+4,cB=mL+cW/2;
+    doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(110,120,135);
+    doc.text('HOSPITAL',cA,y+6);doc.text('HOSPITAL TYPE',cB,y+6);
+    doc.text('CONDITION',cA,y+17);doc.text('PROPOSED PROCEDURE',cB,y+17);
+    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...DK);
+    doc.text(g('f_hosp'),cA,y+12);doc.text(g('f_hospType'),cB,y+12);
+    doc.text(doc.splitTextToSize(g('f_cond'),cW/2-8)[0],cA,y+22);
+    doc.text(doc.splitTextToSize(g('f_proc'),cW/2-8)[0],cB,y+22);
+    y+=bH+8;
 
-  // Save
-  const safeCond=(cond||'Assessment').replace(/[^a-zA-Z0-9]/g,'_').slice(0,20);
-  const safeDate=(dispDate||'').replace(/\s/g,'');
-  doc.save(`PreClaim_${safeCond}_${safeDate}.pdf`);
-  toast('✅ PDF downloaded!');
+    // S1
+    y=secH(doc,'1. General Exclusion Check',y);
+    doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(...DK);
+    y=wrap(doc,g('s1'),mL,y,cW);y+=7;
+
+    // S2 table
+    if(y+50>pH-fH-8){dF(doc,pn[0]);doc.addPage();pn[0]++;dH(doc);dF(doc,pn[0]);y=hH+10;}
+    y=secH(doc,'2. Medical Necessity Assessment',y);
+    const c1=46,c2=26,c3=cW-c1-c2,tX=mL,rH=6.5;
+    doc.setFillColor(...T);doc.rect(tX,y,cW,rH,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(255,255,255);
+    doc.text('Outcome',tX+2,y+4.5);doc.text('Likelihood',tX+c1+2,y+4.5);doc.text('Reasoning',tX+c1+c2+2,y+4.5);y+=rH;
+    const s2r=[{o:g('o1'),l:g('l1'),r:g('r1')},{o:g('o2'),l:g('l2'),r:g('r2')},{o:g('o3'),l:g('l3'),r:g('r3')}];
+    s2r.forEach((row,i)=>{
+      doc.setFontSize(8);
+      const rl=doc.splitTextToSize(row.r,c3-4);const dH2=Math.max(9,rl.length*4.3+4);
+      if(y+dH2>pH-fH-8){dF(doc,pn[0]);doc.addPage();pn[0]++;dH(doc);dF(doc,pn[0]);y=hH+10;}
+      doc.setFillColor(...(i%2===0?[255,255,255]:LG));doc.rect(tX,y,cW,dH2,'F');
+      doc.setDrawColor(...MG);doc.setLineWidth(0.15);
+      doc.line(tX+c1,y,tX+c1,y+dH2);doc.line(tX+c1+c2,y,tX+c1+c2,y+dH2);doc.rect(tX,y,cW,dH2);
+      doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...DK);
+      doc.text(row.o||'—',tX+2,y+5.5);doc.text(row.l||'—',tX+c1+2,y+5.5);
+      rl.forEach((ln,li)=>doc.text(ln,tX+c1+c2+2,y+5.5+li*4.3));y+=dH2;
+    });y+=7;
+
+    // S3 PEC table
+    if(y+35>pH-fH-8){dF(doc,pn[0]);doc.addPage();pn[0]++;dH(doc);dF(doc,pn[0]);y=hH+10;}
+    y=secH(doc,'3. Pre-Existing Condition (PEC) Assessment',y);
+    const pW2=54,pH2=cW-pW2;
+    doc.setFillColor(...T);doc.rect(tX,y,cW,rH,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(255,255,255);
+    doc.text('Policy Duration',tX+2,y+4.5);doc.text('Assessment',tX+pW2+2,y+4.5);y+=rH;
+    [['Less than 1 year',g('pec1')],['1 - 2 years',g('pec2')],['More than 2 years',g('pec3')]].forEach(([k,v],i)=>{
+      const rl=doc.splitTextToSize(v,pH2-4);const dR=Math.max(9,rl.length*4.3+4);
+      doc.setFillColor(...(i%2===0?[255,255,255]:LG));doc.rect(tX,y,cW,dR,'F');
+      doc.setDrawColor(...MG);doc.line(tX+pW2,y,tX+pW2,y+dR);doc.rect(tX,y,cW,dR);
+      doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...DK);
+      doc.text(k,tX+2,y+5.5);rl.forEach((ln,li)=>doc.text(ln,tX+pW2+2,y+5.5+li*4.3));y+=dR;
+    });y+=7;
+
+    // S4 R&C - two mini tables side by side
+    if(y+38>pH-fH-8){dF(doc,pn[0]);doc.addPage();pn[0]++;dH(doc);dF(doc,pn[0]);y=hH+10;}
+    y=secH(doc,'4. Reasonable & Customary (R&C) Benchmark',y);
+    const hw=(cW-5)/2;
+    // Left table: TOSP+ranges
+    doc.setFillColor(...T);doc.rect(mL,y,hw,rH,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(255,255,255);
+    doc.text('Item',mL+2,y+4);doc.text('Details',mL+40,y+4);y+=rH;
+    const rc=[['TOSP Code',g('tosp_code')],['Table of Surgery',g('tosp_table')],['Private Hospital',g('rc_private')],['Public Hospital',g('rc_public')]];
+    let yrL=y;
+    rc.forEach(([k,v],i)=>{
+      doc.setFillColor(...(i%2===0?[255,255,255]:LG));doc.rect(mL,yrL,hw,8,'F');
+      doc.setDrawColor(...MG);doc.setLineWidth(0.15);doc.line(mL+38,yrL,mL+38,yrL+8);doc.rect(mL,yrL,hw,8);
+      doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(...DK);
+      doc.text(k,mL+2,yrL+5.5);doc.text(v,mL+40,yrL+5.5);yrL+=8;
+    });
+    // Right table: percentiles
+    const rx=mL+hw+5;
+    doc.setFillColor(...T);doc.rect(rx,y,hw,rH,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(255,255,255);
+    doc.text('Percentile',rx+2,y+4);doc.text('Estimate',rx+30,y+4);let yrR=y+rH;
+    [['P50',g('p50')],['P75',g('p75')],['P90',g('p90')]].forEach(([k,v],i)=>{
+      doc.setFillColor(...(i%2===0?[255,255,255]:LG));doc.rect(rx,yrR,hw,8,'F');
+      doc.setDrawColor(...MG);doc.line(rx+28,yrR,rx+28,yrR+8);doc.rect(rx,yrR,hw,8);
+      doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(...DK);
+      doc.text(k,rx+2,yrR+5.5);doc.text(v,rx+30,yrR+5.5);yrR+=8;
+    });
+    y=Math.max(yrL,yrR)+7;
+
+    // S5 LOG
+    if(y+22>pH-fH-8){dF(doc,pn[0]);doc.addPage();pn[0]++;dH(doc);dF(doc,pn[0]);y=hH+10;}
+    y=secH(doc,'5. Indicative LOG Recommendation',y);
+    doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(...DK);
+    y=wrap(doc,g('log_rec'),mL,y,cW);y+=8;
+
+    // Disclaimer
+    if(y+18>pH-fH-8){dF(doc,pn[0]);doc.addPage();pn[0]++;dH(doc);dF(doc,pn[0]);y=hH+10;}
+    doc.setDrawColor(...MG);doc.setLineWidth(0.35);doc.line(mL,y,pW-mR,y);y+=5;
+    doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(...O);doc.text('Disclaimer',mL,y);y+=4.5;
+    doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(110,120,130);
+    const disc='This pre-claim assessment is prepared for guidance only and does not guarantee coverage or claim payment. Final claim outcomes remain subject to insurer review of medical records, policy terms, benefit limits, exclusions, and the final hospital bill.';
+    y=wrap(doc,disc,mL,y,cW);
+
+    const safe=(g('f_cond')).replace(/[^a-zA-Z0-9]/g,'_').slice(0,20);
+    doc.save(`PreClaim_${safe}_${disp.replace(/\s/g,'')}.pdf`);
+    toast('✅ PDF downloaded!');
+  }catch(e){
+    console.error(e);
+    toast('⚠️ PDF failed — showing copy block.','var(--o)');
+    copyClient();
+  }
 }
 
-// ─────────────────────────────────────────
-//  TOAST
-// ─────────────────────────────────────────
-function toast(msg, color='var(--teal)'){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.style.display='block'; t.style.borderColor=color;
-  t.style.animation='none'; void t.offsetWidth; t.style.animation='slideUp .3s ease';
-  clearTimeout(window._tt);
-  window._tt=setTimeout(()=>t.style.display='none',5000);
+function toast(msg,color='var(--t)'){
+  const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';t.style.borderColor=color;
+  t.style.animation='none';void t.offsetWidth;t.style.animation='su .3s ease';
+  clearTimeout(window._tt);window._tt=setTimeout(()=>t.style.display='none',5000);
 }
 </script>
 </body>
