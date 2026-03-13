@@ -115,17 +115,13 @@ body{background:var(--bg);color:var(--tx);font-family:'Inter',sans-serif;min-hei
     <div class="ch"><div class="cn">↑</div><div class="ct">Upload Document or Enter Case Details</div></div>
 
     <div class="uzone" id="dropZone">
-      <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.webp"/>
+      <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.webp" multiple/>
       <div style="font-size:2.4rem;margin-bottom:8px">📄</div>
-      <h3>Drop PDF or image here, or click to browse</h3>
-      <p>AI will extract and analyse automatically</p>
+      <h3>Drop files here, or click to browse</h3>
+      <p>Upload multiple PDFs and images — AI analyses all together</p>
     </div>
 
-    <div class="fprev" id="fprev" style="display:none">
-      <div class="fprev-ico" id="fico">📄</div>
-      <div class="fprev-info"><div class="fprev-name" id="fname">—</div><div class="fprev-sz" id="fsz">—</div></div>
-      <button class="clr" onclick="clearFile()">✕</button>
-    </div>
+    <div id="fileList" style="display:none;margin-top:10px"></div>
 
     <div class="or-div">or enter case details manually</div>
 
@@ -257,7 +253,7 @@ body{background:var(--bg);color:var(--tx);font-family:'Inter',sans-serif;min-hei
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 const T=[60,170,170],O=[220,90,30],DK=[60,60,60],LG=[235,238,242],MG=[200,208,218];
-let logoB64=null,uploadedFile=null;
+let logoB64=null,uploadedFiles=[];
 
 // Key mgmt
 function saveKey(){const v=document.getElementById('apiKey').value.trim();localStorage.setItem('oai_k',v);updateKSt(v);}
@@ -275,20 +271,47 @@ loadKey();
 const dz=document.getElementById('dropZone'),fi=document.getElementById('fileInput');
 dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dov');});
 dz.addEventListener('dragleave',()=>dz.classList.remove('dov'));
-dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dov');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});
-fi.addEventListener('change',()=>{if(fi.files[0])handleFile(fi.files[0]);});
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dov');if(e.dataTransfer.files.length)handleFiles(e.dataTransfer.files);});
+fi.addEventListener('change',()=>{if(fi.files.length)handleFiles(fi.files);});
 
-function handleFile(f){
-  const ok=['application/pdf','image/jpeg','image/jpg','image/png','image/webp'];
-  if(!ok.includes(f.type)){toast('❌ PDF, JPG or PNG only','var(--o)');return;}
-  uploadedFile=f;
-  document.getElementById('fico').textContent=f.type==='application/pdf'?'📄':'🖼️';
-  document.getElementById('fname').textContent=f.name;
-  document.getElementById('fsz').textContent=f.size<1048576?(f.size/1024).toFixed(1)+' KB':(f.size/1048576).toFixed(1)+' MB';
-  document.getElementById('fprev').style.display='flex';
-  dz.style.display='none';
+const ALLOWED=['application/pdf','image/jpeg','image/jpg','image/png','image/webp'];
+function fmtSz(b){return b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB';}
+
+function handleFiles(fileList){
+  const newFiles=Array.from(fileList).filter(f=>{
+    if(!ALLOWED.includes(f.type)){toast('❌ Skipped '+f.name+' — PDF/JPG/PNG only','var(--o)');return false;}
+    return true;
+  });
+  uploadedFiles=[...uploadedFiles,...newFiles];
+  renderFileList();
+  fi.value='';
 }
-function clearFile(){uploadedFile=null;fi.value='';document.getElementById('fprev').style.display='none';dz.style.display='block';}
+
+function renderFileList(){
+  const el=document.getElementById('fileList');
+  if(!uploadedFiles.length){el.style.display='none';el.innerHTML='';dz.style.display='block';return;}
+  dz.style.display='none';el.style.display='block';
+  el.innerHTML=uploadedFiles.map((f,i)=>{
+    const ico=f.type==='application/pdf'?'📄':'🖼️';
+    return`<div class="fprev" style="margin-bottom:6px">
+      <div class="fprev-ico">${ico}</div>
+      <div class="fprev-info"><div class="fprev-name">${f.name}</div><div class="fprev-sz">${fmtSz(f.size)}</div></div>
+      <button class="clr" onclick="removeFile(${i})" title="Remove">✕</button>
+    </div>`;
+  }).join('');
+  // Add more files button
+  el.innerHTML+=`<label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;color:var(--t);margin-top:6px;padding:6px 10px;border:1px dashed var(--bd);border-radius:7px;">
+    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" multiple style="display:none" onchange="handleFiles(this.files)">
+    ➕ Add more files
+  </label>`;
+}
+
+function removeFile(i){
+  uploadedFiles.splice(i,1);
+  renderFileList();
+  if(!uploadedFiles.length){dz.style.display='block';}
+}
+function clearFile(){uploadedFiles=[];fi.value='';document.getElementById('fileList').style.display='none';document.getElementById('fileList').innerHTML='';dz.style.display='block';}
 
 // Build messages
 const SYS=`You are Ulink Pre-Claim Assessment AI for Singapore insurance.
@@ -298,20 +321,27 @@ Hospital rules: Mount Elizabeth/Gleneagles/Parkway/Raffles/Farrer Park=Private. 
 Use plain hyphens only. Return ONLY JSON.`;
 
 async function buildContent(){
-  if(uploadedFile){
-    const b64=await fileToB64(uploadedFile);
-    const d=b64.split(',')[1];
-    if(uploadedFile.type==='application/pdf'){
-      const txt=await extractPDF(uploadedFile);
-      return`Analyse this medical document text:\n\n${txt.slice(0,6000)}`;
-    } else {
-      return[{type:'image_url',image_url:{url:b64,detail:'high'}},{type:'text',text:'Analyse this medical document image and return the assessment JSON.'}];
+  if(uploadedFiles.length){
+    const parts=[];
+    let combinedText='';
+    for(const f of uploadedFiles){
+      if(f.type==='application/pdf'){
+        const txt=await extractPDF(f);
+        combinedText+=`\n\n--- Document: ${f.name} ---\n${txt.slice(0,4000)}`;
+      } else {
+        const b64=await fileToB64(f);
+        parts.push({type:'image_url',image_url:{url:b64,detail:'high'}});
+        parts.push({type:'text',text:`(Image document: ${f.name})`});
+      }
     }
+    if(combinedText) parts.unshift({type:'text',text:'Analyse these medical documents:\n'+combinedText});
+    else parts.push({type:'text',text:'Analyse all uploaded medical documents above and return the assessment JSON.'});
+    return parts;
   }
   const c=document.getElementById('m_cond').value.trim();
   const p=document.getElementById('m_proc').value.trim();
   const h=document.getElementById('m_hosp').value.trim();
-  if(!c&&!p&&!h){throw new Error('Please upload a file OR enter case details.');}
+  if(!c&&!p&&!h){throw new Error('Please upload files OR enter case details.');}
   return`Analyse this case:\nCondition: ${c||'Unknown'}\nProcedure: ${p||'Unknown'}\nHospital: ${h||'Unknown'}`;
 }
 
