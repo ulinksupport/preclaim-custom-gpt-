@@ -42,26 +42,33 @@ app.get('/', (req, res) => {
 //  POST /analyse  — main endpoint
 // ══════════════════════════════════════════════
 app.post('/analyse', upload.single('file'), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded.' });
-  }
-
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
   try {
     let result;
-
-    if (req.file.mimetype === 'application/pdf') {
-      // ── PDF: extract text, then send to GPT-4o ──
-      result = await analysePDF(req.file.buffer);
-    } else {
-      // ── Image: send directly to GPT-4o Vision ──
-      result = await analyseImage(req.file.buffer, req.file.mimetype);
-    }
-
+    if (req.file.mimetype === 'application/pdf') result = await analysePDF(req.file.buffer);
+    else result = await analyseImage(req.file.buffer, req.file.mimetype);
     res.json(result);
-
   } catch (err) {
     console.error('Analysis error:', err.message);
     res.status(500).json({ error: err.message || 'AI analysis failed.' });
+  }
+});
+
+// ── Proxy endpoint for pre-built content ──
+app.use(express.json({ limit: '50mb' }));
+app.post('/proxy-analyse', async (req, res) => {
+  const { content } = req.body;
+  if (!content) return res.status(400).json({ error: 'No content provided.' });
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      temperature: 0.2,
+      messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content }]
+    });
+    res.json(parseAIResponse(completion.choices[0].message.content));
+  } catch (err) {
+    console.error('Proxy error:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -120,41 +127,30 @@ async function analyseImage(buffer, mimetype) {
 // ══════════════════════════════════════════════
 //  GPT-4o SYSTEM PROMPT
 // ══════════════════════════════════════════════
-const SYSTEM_PROMPT = `You are a senior pre-claim assessor at Ulink Assist, a Singapore insurance Third Party Administrator (TPA).
+const SYSTEM_PROMPT = `You are Ulink Pre-Claim Assessment AI.
+Analyse medical cases for Singapore insurance LOG requests. Use insurer-oriented logic. 
+Never provide medical advice. State that final outcome is subject to insurer review.
 
-Your job is to analyse medical documents (referral letters, medical reports, pre-authorisation requests, discharge summaries, or investigation reports) and produce a structured pre-claim assessment.
+EXTRACT: Patient name, diagnosis, procedure, hospital, laterality, opCode, TOSP table, estimated bill, length of stay.
+HOSPITAL TYPE: Private (MEH, MEN, Gleneagles, Raffles, Farrer Park, Mt Alvernia, Thomson, Crawfurd) or Government Restructured (SGH, TTSH, NUH, KTPH, CGH, SKH, NTFH). Default Private.
+TOSP: Map to closest MOH Table of Surgical Procedures.
 
-Return ONLY a valid JSON object with this exact structure — no extra text, no markdown, no explanation:
-
+Return ONLY a valid JSON object:
 {
-  "hospital": "Full hospital name",
-  "hospital_type": "Private or Public",
-  "condition": "Primary diagnosis / condition",
-  "procedure": "Proposed or completed procedure",
-  "s1_exclusion": "Detailed general exclusion check — assess policy exclusions, waiting periods, cosmetic/preventive exclusions, and eligibility. If insufficient info, state what additional documents are needed.",
-  "s2_rows": [
-    {
-      "outcome": "Most likely outcome (e.g. Full Recovery)",
-      "likelihood": "e.g. 70-80%",
-      "reasoning": "Clinical reasoning based on the document"
-    },
-    {
-      "outcome": "Second possible outcome (e.g. Partial Recovery / Complication)",
-      "likelihood": "e.g. 15-25%",
-      "reasoning": "Clinical reasoning"
-    },
-    {
-      "outcome": "Least likely outcome (e.g. No Improvement / Recurrence)",
-      "likelihood": "e.g. 0-5%",
-      "reasoning": "Clinical reasoning"
-    }
-  ],
-  "s3_pec": "Pre-existing condition assessment — identify any PEC relevant to the claim, assess policy duration and PEC impact (Policy < 1yr / 1-2yr / > 2yr). State what records would confirm or rule out PEC.",
-  "s4_rc": "Reasonable & Customary cost estimate — provide relevant TOSP code if applicable, estimate typical cost range for procedure at this hospital type in Singapore (SGD). Note public vs private benchmarks.",
-  "s5_log": "Letter of Guarantee recommendation — state whether to issue LOG, recommended amount range (SGD), any conditions or exclusions to apply, and remarks for insurer or hospital."
-}
-
-Be specific, professional, and concise. Use Singapore insurance and medical context.`;
+  "date":"DD Month YYYY",
+  "patientName":"", "condition":"", "procedure":"", "hospital":"", "hospType":"(Singapore – Private/Government Hospital)",
+  "laterality":"", "opCode":"", "tosp_table":"", "estBill":"", "stayLength":"",
+  "s1":"1-2 sentence assessment",
+  "o1":"Medically Necessary", "l1":"70-90%", "r1":"",
+  "o2":"Borderline", "l2":"10-20%", "r2":"",
+  "o3":"Not Medically Necessary", "l3":"0-5%", "r3":"",
+  "pec1":"Assessment for <1 yr", "pec2":"Assessment for 1-2 yrs", "pec3":"Assessment for >2 yrs",
+  "tosp_code":"CODE - Procedure", "rc_private":"SGD X,XXX - X,XXX", "rc_public":"SGD X,XXX - X,XXX", "p50":"SGD X,XXX", "p75":"", "p90":"",
+  "log_rec":"One short sentence", 
+  "conf_clinical":"", "conf_procedure":"", "conf_cost":"", "conf_overall":"",
+  "email_subject":"Pre-Claim Assessment – [Condition/Procedure]",
+  "email_body":"Hi [Name],\\n\\nPlease find attached...\\n\\nAssessment is preliminary...\\n\\nRegards\\n[Sender]"
+}`;
 
 // ══════════════════════════════════════════════
 //  Parse AI response (handle markdown code blocks)

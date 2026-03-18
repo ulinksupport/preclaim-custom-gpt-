@@ -92,8 +92,7 @@ body{background:var(--bg);color:var(--tx);font-family:'Inter',sans-serif;min-hei
 <body>
 
 <div class="sbar">
-  <label>OpenAI API Key</label>
-  <input type="password" id="apiKey" placeholder="sk-proj-..." oninput="saveKey()"/>
+  <div class="field" style="flex:1"><label>OpenAI API Key (Optional)</label><input type="password" id="oai_k" placeholder="Leave blank to use permanent key" onchange="localStorage.setItem('oai_k',this.value.trim())"/></div>
   <span class="kst no" id="kst">Not set</span>
 </div>
 
@@ -380,31 +379,47 @@ async function extractPDF(f){
 
 async function analyseDoc(){
   const key=(localStorage.getItem('oai_k')||'').trim();
-  if(!key||!key.startsWith('sk-')){toast('⚠️ Enter your OpenAI API key above.','var(--o)');return;}
+  const usePrx=!key || !key.startsWith('sk-');
+  
   setLd(true,'Preparing document…','Extracting content…');
   try{
     const content=await buildContent();
     setLd(true,'Analysing with AI…','GPT-4o generating pre-claim assessment…');
-    const messages=[{role:'system',content:SYS},{role:'user',content:content}];
-    const res=await fetch('https://api.openai.com/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-      body:JSON.stringify({model:'gpt-4o',temperature:0.2,max_tokens:2500,messages})
-    });
-    if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'API error '+res.status);}
-    const j=await res.json();
-    const raw=j.choices?.[0]?.message?.content||'';
-    let t=raw.trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
-    const s=t.indexOf('{'),en=t.lastIndexOf('}');
-    if(s!==-1&&en!==-1)t=t.slice(s,en+1);
-    const d=JSON.parse(t);
+    
+    let d;
+    if(usePrx){
+      // Use Backend Proxy (Permanent Key)
+      const res=await fetch('https://preclaim-custom-gpt.onrender.com/proxy-analyse',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({content})
+      });
+      if(!res.ok) throw new Error('Backend busy or key missing on server');
+      d=await res.json();
+    } else {
+      // Use User's own key
+      const messages=[{role:'system',content:SYS},{role:'user',content:content}];
+      const res=await fetch('https://api.openai.com/v1/chat/completions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+        body:JSON.stringify({model:'gpt-4o',temperature:0.2,max_tokens:2500,messages})
+      });
+      if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'API error '+res.status);}
+      const j=await res.json();
+      const raw=j.choices?.[0]?.message?.content||'';
+      let t=raw.trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
+      const s=t.indexOf('{'),en=t.lastIndexOf('}');
+      if(s!==-1&&en!==-1)t=t.slice(s,en+1);
+      d=JSON.parse(t);
+    }
+    
     setLd(true,'Populating assessment…','Auto-filling all sections…');
     await new Promise(r=>setTimeout(r,400));
     fillForm(d);
     document.getElementById('results').style.display='block';
     document.getElementById('results').scrollIntoView({behavior:'smooth'});
     setLd(false);
-    toast('✅ Assessment complete! Review and download your PDF.');
+    toast('✅ Assessment complete!');
   }catch(e){setLd(false);toast('❌ '+(e.message||'Failed'),'var(--o)');console.error(e);}
 }
 
