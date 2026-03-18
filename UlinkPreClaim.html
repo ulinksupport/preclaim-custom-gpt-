@@ -156,11 +156,14 @@ body{background:var(--bg);color:var(--tx);font-family:'Inter',sans-serif;min-hei
       <div class="ch"><div class="cn">0</div><div class="ct">Case Information <span id="b0"></span></div></div>
       <div class="grid2">
         <div class="field"><label>Report Date</label><input type="date" id="f_date"/></div>
-        <div class="field"><label>Hospital Type</label><select id="f_hospType"><option>Private</option><option>Public/Restructured</option></select></div>
+        <div class="field"><label>Patient Name</label><input type="text" id="f_patient" placeholder="Patient Name"/></div>
         <div class="field"><label>Hospital</label><input type="text" id="f_hosp" placeholder="Hospital name"/></div>
-        <div class="field"><label>Country</label><input type="text" id="f_country" value="Singapore"/></div>
+        <div class="field"><label>Hospital Type</label><select id="f_hospType"><option>Private</option><option>Public/Restructured</option></select></div>
         <div class="field"><label>Condition / Diagnosis</label><input type="text" id="f_cond"/></div>
         <div class="field"><label>Proposed Procedure</label><input type="text" id="f_proc"/></div>
+        <div class="field"><label>Est. Total Bill</label><input type="text" id="f_estBill" placeholder="e.g. SGD 12,000"/></div>
+        <div class="field"><label>Length of Stay</label><input type="text" id="f_stay" placeholder="e.g. 2 days"/></div>
+        <div class="field" style="display:none"><label>Country</label><input type="text" id="f_country" value="Singapore"/></div>
       </div>
     </div>
 
@@ -314,11 +317,31 @@ function removeFile(i){
 function clearFile(){uploadedFiles=[];fi.value='';document.getElementById('fileList').style.display='none';document.getElementById('fileList').innerHTML='';dz.style.display='block';}
 
 // Build messages
-const SYS=`You are Ulink Pre-Claim Assessment AI for Singapore insurance.
-Analyse the input and return ONLY a valid JSON object with these exact keys:
-{"date":"DD Month YYYY","condition":"","procedure":"","hospital":"","hospType":"Private or Public/Restructured","country":"Singapore","s1":"1-2 sentence general exclusion check","o1":"Medically Necessary","l1":"70-85%","r1":"reasoning","o2":"Borderline","l2":"10-20%","r2":"reasoning","o3":"Not Medically Necessary","l3":"0-5%","r3":"reasoning","pec1":"Less than 1 year assessment","pec2":"1-2 years assessment","pec3":"More than 2 years assessment","tosp_code":"closest TOSP code","tosp_table":"Table number","rc_private":"SGD X,XXX - X,XXX","rc_public":"SGD X,XXX - X,XXX","p50":"SGD X,XXX","p75":"SGD X,XXX","p90":"SGD X,XXX","log_rec":"one sentence LOG recommendation SGD range","email_subject":"Pre-Claim Assessment - [Condition]","email_body":"full professional email body"}
-Hospital rules: Mount Elizabeth/Gleneagles/Parkway/Raffles/Farrer Park=Private. SGH/NUH/TTSH/KKH/CGH/SKH=Public/Restructured. Unknown=Private.
-Use plain hyphens only. Return ONLY JSON.`;
+const SYS=`You are Ulink Pre-Claim Assessment AI.
+Analyse medical cases for Singapore insurance LOG requests. Use insurer-oriented logic. 
+Never provide medical advice. State that final outcome is subject to insurer review.
+
+EXTRACT: Patient name, diagnosis, procedure, hospital, laterality, opCode, TOSP table, estimated bill, length of stay.
+HOSPITAL TYPE: Private (MEH, MEN, Gleneagles, Raffles, Farrer Park, Mt Alvernia, Thomson, Crawfurd) or Government Restructured (SGH, TTSH, NUH, KTPH, CGH, SKH, NTFH). Default Private.
+TOSP: Map to closest MOH Table of Surgical Procedures.
+
+Return ONLY a valid JSON object:
+{
+  "date":"DD Month YYYY",
+  "patientName":"", "condition":"", "procedure":"", "hospital":"", "hospType":"(Singapore – Private/Government Hospital)",
+  "laterality":"", "opCode":"", "tosp_table":"", "estBill":"", "stayLength":"",
+  "s1":"1-2 sentence assessment",
+  "o1":"Medically Necessary", "l1":"70-90%", "r1":"",
+  "o2":"Borderline", "l2":"10-20%", "r2":"",
+  "o3":"Not Medically Necessary", "l3":"0-5%", "r3":"",
+  "pec1":"Assessment for <1 yr", "pec2":"Assessment for 1-2 yrs", "pec3":"Assessment for >2 yrs",
+  "tosp_code":"CODE - Procedure", "rc_private":"SGD X,XXX - X,XXX", "rc_public":"SGD X,XXX - X,XXX", "p50":"SGD X,XXX", "p75":"", "p90":"",
+  "log_rec":"One short sentence", 
+  "conf_clinical":"", "conf_procedure":"", "conf_cost":"", "conf_overall":"",
+  "email_subject":"Pre-Claim Assessment – [Condition/Procedure]",
+  "email_body":"Hi [Name],\\n\\nPlease find attached...\\n\\nAssessment is preliminary...\\n\\nRegards\\n[Sender]"
+}
+Return ONLY JSON.`;
 
 async function buildContent(){
   if(uploadedFiles.length){
@@ -397,10 +420,10 @@ function set(id,val){const el=document.getElementById(id);if(el&&val){el.value=v
 function fillForm(d){
   const bg='<span class="aibg">✦ AI</span>';
   if(d.date){try{const pd=new Date(d.date);if(!isNaN(pd)){const p=n=>String(n).padStart(2,'0');set('f_date',`${pd.getFullYear()}-${p(pd.getMonth()+1)}-${p(pd.getDate())}`)}}catch(_){}}
-  set('f_hosp',d.hospital);set('f_cond',d.condition);set('f_proc',d.procedure);set('f_country',d.country);
+  set('f_patient',d.patientName);set('f_hosp',d.hospital);set('f_cond',d.condition);set('f_proc',d.procedure);set('f_country',d.country);
+  set('f_estBill',d.estBill);set('f_stay',d.stayLength);
   if(d.hospType){const s=document.getElementById('f_hospType');const op=[...s.options].find(o=>o.value.toLowerCase().includes(d.hospType.toLowerCase().split('/')[0]));if(op){s.value=op.value;s.classList.add('ai-f');}}
-  set('s1',d.s1);
-  set('o1',d.o1);set('l1',d.l1);set('r1',d.r1);
+  set('s1',d.s1);set('o1',d.o1);set('l1',d.l1);set('r1',d.r1);
   set('o2',d.o2);set('l2',d.l2);set('r2',d.r2);
   set('o3',d.o3);set('l3',d.l3);set('r3',d.r3);
   set('pec1',d.pec1);set('pec2',d.pec2);set('pec3',d.pec3);
@@ -416,56 +439,63 @@ function renderInternal(d){
   const row=(k,v)=>`<tr><th>${k}</th><td>${v||'—'}</td></tr>`;
   document.getElementById('intSum').innerHTML=`
   <div class="int-section"><h4>Case Details</h4><table class="int-tbl">
-    ${row('Condition',d.condition)}${row('Procedure',d.procedure)}${row('Hospital',d.hospital)}${row('Hospital Type',d.hospType)}${row('TOSP Code',d.tosp_code)}${row('Table of Surgery',d.tosp_table)}
+    ${row('Patient',d.patientName)}${row('Condition',d.condition)}${row('Procedure',d.procedure)}${row('Hospital',d.hospital)}${row('Table of Surgery',d.tosp_table)}${row('Operation Code',d.opCode)}${row('Est. Total Bill',d.estBill)}${row('Length of Stay',d.stayLength)}
   </table></div>
-  <div class="int-section" style="margin-top:8px"><h4>A. General Exclusion Outcome</h4><p style="font-size:.81rem;color:var(--tx);line-height:1.5">${d.s1||'—'}</p></div>
+  <div class="int-section" style="margin-top:8px"><h4>A. General Exclusion Assessment</h4><p style="font-size:.81rem;color:var(--tx);line-height:1.5">${d.s1||'—'}</p></div>
   <div class="int-section" style="margin-top:8px"><h4>B. Medical Necessity (Internal Likelihood)</h4><table class="int-tbl">
     <tr><th>Outcome</th><th>Likelihood</th></tr>
-    <tr><td>${d.o1||'—'}</td><td>${d.l1||'—'}</td></tr>
-    <tr><td>${d.o2||'—'}</td><td>${d.l2||'—'}</td></tr>
-    <tr><td>${d.o3||'—'}</td><td>${d.l3||'—'}</td></tr>
+    <tr><td>Medically Necessary</td><td>${d.l1||'—'}</td></tr>
+    <tr><td>Borderline</td><td>${d.l2||'—'}</td></tr>
+    <tr><td>Not Necessary</td><td>${d.l3||'—'}</td></tr>
   </table></div>
   <div class="int-section" style="margin-top:8px"><h4>C. PEC Risk by Policy Duration</h4><table class="int-tbl">
     ${row('< 1 year',d.pec1)}${row('1 – 2 years',d.pec2)}${row('> 2 years',d.pec3)}
   </table></div>
-  <div class="int-section" style="margin-top:8px"><h4>E. R&amp;C Benchmark &amp; Cost Percentiles</h4><table class="int-tbl">
+  <div class="int-section" style="margin-top:8px"><h4>E. R&amp;C Benchmark</h4><table class="int-tbl">
     ${row('Private Hospital',d.rc_private)}${row('Public/Restructured',d.rc_public)}${row('P50',d.p50)}${row('P75',d.p75)}${row('P90',d.p90)}
   </table></div>
-  <div class="int-section" style="margin-top:8px"><h4>G. Indicative LOG Recommendation</h4><p style="font-size:.81rem;color:var(--tx)">${d.log_rec||'—'}</p></div>`;
+  <div class="int-section" style="margin-top:8px"><h4>H. Internal Confidence Assessment</h4><table class="int-tbl">
+    ${row('Clinical Clarity',d.conf_clinical)}${row('Procedure Clarity',d.conf_procedure)}${row('Cost Reliability',d.conf_cost)}${row('Overall Confidence',d.conf_overall)}
+  </table></div>`;
 }
 
 // Copy client summary
 function copyClient(){
   const g=id=>(document.getElementById(id)?.value||'').trim()||'—';
   const disp=formatDate(g('f_date'));
-  const U='_'.repeat(62);
+  const U='______________________________________________________________';
   const txt=[
     'PRE-CLAIM ASSESSMENT SUMMARY','',
     `Date: ${disp}`,`Condition: ${g('f_cond')}`,`Procedure: ${g('f_proc')}`,
-    `Hospital: ${g('f_hosp')} (${g('f_country')} - ${g('f_hospType')})`,
-    U,'','1. General Exclusion Check','',g('s1'),'',U,'',
+    `Hospital: ${g('f_hosp')} ${g('f_hospType')}`,
+    '',U,'','1. General Exclusion Check','',g('s1'),'',U,'',
     '2. Medical Necessity Assessment','',
-    'Outcome                | Likelihood | Reasoning','-'.repeat(62),
-    `${(g('o1')).padEnd(22)}| ${(g('l1')).padEnd(10)}| ${g('r1')}`,
-    `${(g('o2')).padEnd(22)}| ${(g('l2')).padEnd(10)}| ${g('r2')}`,
-    `${(g('o3')).padEnd(22)}| ${(g('l3')).padEnd(10)}| ${g('r3')}`,
+    '| Outcome                | Likelihood Range | Reasoning',
+    '|------------------------|------------------|------------------',
+    `| Medically Necessary    | ${(g('l1')).padEnd(16)} | ${g('r1')}`,
+    `| Borderline             | ${(g('l2')).padEnd(16)} | ${g('r2')}`,
+    `| Not Medically Necessary| <5%               | ${g('r3')}`,
     '',U,'','3. Pre-Existing Condition (PEC) Assessment','',
-    'Policy Duration        | Assessment','-'.repeat(62),
-    `${'Less than 1 year'.padEnd(22)}| ${g('pec1')}`,
-    `${'1 - 2 years'.padEnd(22)}| ${g('pec2')}`,
-    `${'More than 2 years'.padEnd(22)}| ${g('pec3')}`,
+    '| Policy Duration        | PEC Assessment',
+    '|------------------------|------------------',
+    `| Less than 1 year       | ${g('pec1')}`,
+    `| 1 - 2 years            | ${g('pec2')}`,
+    `| More than 2 years      | ${g('pec3')}`,
     '',U,'','4. Reasonable & Customary (R&C) Benchmark','',
-    'Item                   | Details','-'.repeat(62),
-    `${'Closest TOSP Code'.padEnd(22)}| ${g('tosp_code')}`,
-    `${'Table of Surgery'.padEnd(22)}| ${g('tosp_table')}`,
-    `${'Private Hospital'.padEnd(22)}| ${g('rc_private')}`,
-    `${'Public Hospital'.padEnd(22)}| ${g('rc_public')}`,
-    '','Estimated Cost Percentiles:',
-    `P50: ${g('p50')}   P75: ${g('p75')}   P90: ${g('p90')}`,
-    '',U,'','5. Indicative LOG Recommendation','',g('log_rec'),'',U,'',
-    'Disclaimer','',
-    'This pre-claim assessment is prepared for guidance only and does not guarantee coverage or claim payment. Final claim outcomes remain subject to insurer review of medical records, policy terms, benefit limits, exclusions, and the final hospital bill.',
-    '',U,'Ulink Assist | www.ulinkassist.com'
+    '| Item                   | Details',
+    '|------------------------|------------------',
+    `| Closest TOSP Code      | ${g('tosp_code')}`,
+    `| Table of Surgery       | ${g('tosp_table')}`,
+    `| Private Hospital       | ${g('rc_private')}`,
+    `| Public Hospital        | ${g('rc_public')}`,
+    '','Estimated Cost Percentiles','',
+    '| Percentile | Estimated Cost',
+    '|------------|------------------',
+    `| P50        | ${g('p50')}`,
+    `| P75        | ${g('p75')}`,
+    `| P90        | ${g('p90')}`,
+    '',U,'','5. Indicative LOG Recommendation','',g('log_rec'),'',U,'','Disclaimer','',
+    'This pre-claim assessment is prepared for guidance only and does not guarantee coverage or claim payment. Final claim outcomes remain subject to insurer review of medical records, policy terms, benefit limits, exclusions, and the final hospital bill.'
   ].join('\n');
   const cpb=document.getElementById('cpblock');
   cpb.textContent=txt;
@@ -476,150 +506,69 @@ function copyBlock(){navigator.clipboard.writeText(document.getElementById('cpbl
 function formatDate(raw){if(!raw)return'—';try{const[y,m,d]=raw.split('-');const mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return`${parseInt(d)} ${mn[parseInt(m)-1]} ${y}`;}catch(_){return raw;}}
 
 // PDF generation
+// PDF generation (Simplified, matches copy-block)
 async function generatePDF(){
   try{
     const{jsPDF}=window.jspdf;
     const g=id=>(document.getElementById(id)?.value||'').trim()||'—';
     const doc=new jsPDF({unit:'mm',format:'a4'});
-    const pW=210,pH=297,mL=15,mR=15,cW=pW-mL-mR,hH=20,fH=13;
-    const pn=[1];
+    const mL=15,mR=15,cW=210-mL-mR;
     const disp=formatDate(g('f_date'));
+    const U='______________________________________________________________';
+    let y=20;
 
-    function dH(d){
-      d.setFillColor(...T);d.rect(0,0,pW,hH,'F');
-      if(logoB64){try{d.addImage(logoB64,'PNG',pW-34,1.5,16,16);}catch(_){}}
-      d.setFont('helvetica','bold');d.setFontSize(9.5);d.setTextColor(255,255,255);
-      d.text('Ulink Assist  |  Pre-Claim Assessment Report',mL,13);
-    }
-    function dF(d,n){
-      d.setFillColor(...T);d.rect(0,pH-fH,pW,fH,'F');
-      d.setFont('helvetica','normal');d.setFontSize(7.5);d.setTextColor(255,255,255);
-      d.text('Ulink Assist Pre-Claim Assessment  |  www.ulinkassist.com',mL,pH-4.5);
-      d.text('Page '+n,pW-mR,pH-4.5,{align:'right'});
-    }
-    function secH(d,lbl,y){
-      d.setFont('helvetica','bold');d.setFontSize(10);d.setTextColor(...T);d.text(lbl,mL,y);y+=2;
-      d.setDrawColor(...T);d.setLineWidth(0.45);d.line(mL,y,pW-mR,y);return y+5.5;
-    }
-    function wrap(d,txt,x,y,mxW){
-      const ls=d.splitTextToSize(txt||'',mxW);
-      for(let i=0;i<ls.length;i++){if(y+5>pH-fH-6){dF(d,pn[0]);d.addPage();pn[0]++;dH(d);dF(d,pn[0]);y=hH+10;}d.text(ls[i],x,y);y+=5;}
-      return y;
-    }
+    doc.setFont('helvetica','bold');doc.setFontSize(14);doc.text('PRE-CLAIM ASSESSMENT SUMMARY',mL,y);y+=10;
+    doc.setFontSize(10);doc.setFont('helvetica','normal');
+    doc.text(`Date: ${disp}`,mL,y);y+=6;
+    doc.text(`Condition: ${g('f_cond')}`,mL,y);y+=6;
+    doc.text(`Procedure: ${g('f_proc')}`,mL,y);y+=6;
+    doc.text(`Hospital: ${g('f_hosp')} ${g('f_hospType')}`,mL,y);y+=8;
+    doc.text(U,mL,y);y+=10;
 
-    dH(doc);dF(doc,1);
-    let y=hH+9;
+    doc.setFont('helvetica','bold');doc.text('1. General Exclusion Check',mL,y);y+=6;
+    doc.setFont('helvetica','normal');const s1l=doc.splitTextToSize(g('s1'),cW);doc.text(s1l,mL,y);y+=s1l.length*5+5;doc.text(U,mL,y);y+=10;
 
-    doc.setFont('helvetica','bold');doc.setFontSize(14);doc.setTextColor(...O);
-    doc.text('Pre-Claim Assessment Summary',mL,y);y+=3;
-    doc.setDrawColor(...O);doc.setLineWidth(0.7);doc.line(mL,y,pW-mR,y);y+=6;
+    doc.setFont('helvetica','bold');doc.text('2. Medical Necessity Assessment',mL,y);y+=8;
+    const s2=[['Outcome','Likelihood','Reasoning'],['Medically Necessary',g('l1'),g('r1')],['Borderline',g('l2'),g('r2')],['Not Necessary','<5%',g('r3')]];
+    y=drawTbl(doc,s2,[45,30,cW-75],y);y+=5;doc.text(U,mL,y);y+=10;
 
-    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(120,130,145);
-    doc.text('Date: '+disp,pW-mR,y,{align:'right'});y+=5;
+    doc.setFont('helvetica','bold');doc.text('3. Pre-Existing Condition (PEC) Assessment',mL,y);y+=8;
+    const s3=[['Policy Duration','PEC Assessment'],['Less than 1 year',g('pec1')],['1 - 2 years',g('pec2')],['More than 2 years',g('pec3')]];
+    y=drawTbl(doc,s3,[45,cW-45],y);y+=5;doc.text(U,mL,y);y+=10;
 
-    // Case box
-    const bH=26;doc.setFillColor(...LG);doc.setDrawColor(...MG);doc.setLineWidth(0.35);doc.roundedRect(mL,y,cW,bH,2,2,'FD');
-    const cA=mL+4,cB=mL+cW/2;
-    doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(110,120,135);
-    doc.text('HOSPITAL',cA,y+6);doc.text('HOSPITAL TYPE',cB,y+6);
-    doc.text('CONDITION',cA,y+17);doc.text('PROPOSED PROCEDURE',cB,y+17);
-    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...DK);
-    doc.text(g('f_hosp'),cA,y+12);doc.text(g('f_hospType'),cB,y+12);
-    doc.text(doc.splitTextToSize(g('f_cond'),cW/2-8)[0],cA,y+22);
-    doc.text(doc.splitTextToSize(g('f_proc'),cW/2-8)[0],cB,y+22);
-    y+=bH+8;
+    doc.setFont('helvetica','bold');doc.text('4. Reasonable & Customary (R&C) Benchmark',mL,y);y+=8;
+    const s4=[['Item','Details'],['TOSP Code',g('tosp_code')],['Table of Surgery',g('tosp_table')],['Private Hospital',g('rc_private')],['Public Hospital',g('rc_public')]];
+    y=drawTbl(doc,s4,[45,cW-45],y);y+=8;
+    doc.text('Estimated Cost Percentiles',mL,y);y+=6;
+    const s4p=[['Percentile','Estimate'],['P50',g('p50')],['P75',g('p75')],['P90',g('p90')]];
+    y=drawTbl(doc,s4p,[45,cW-45],y);y+=5;doc.text(U,mL,y);y+=10;
 
-    // S1
-    y=secH(doc,'1. General Exclusion Check',y);
-    doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(...DK);
-    y=wrap(doc,g('s1'),mL,y,cW);y+=7;
+    doc.setFont('helvetica','bold');doc.text('5. Indicative LOG Recommendation',mL,y);y+=6;
+    doc.setFont('helvetica','normal');doc.text(g('log_rec'),mL,y);y+=10;doc.text(U,mL,y);y+=10;
 
-    // S2 table
-    if(y+50>pH-fH-8){dF(doc,pn[0]);doc.addPage();pn[0]++;dH(doc);dF(doc,pn[0]);y=hH+10;}
-    y=secH(doc,'2. Medical Necessity Assessment',y);
-    const c1=46,c2=26,c3=cW-c1-c2,tX=mL,rH=6.5;
-    doc.setFillColor(...T);doc.rect(tX,y,cW,rH,'F');
-    doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(255,255,255);
-    doc.text('Outcome',tX+2,y+4.5);doc.text('Likelihood',tX+c1+2,y+4.5);doc.text('Reasoning',tX+c1+c2+2,y+4.5);y+=rH;
-    const s2r=[{o:g('o1'),l:g('l1'),r:g('r1')},{o:g('o2'),l:g('l2'),r:g('r2')},{o:g('o3'),l:g('l3'),r:g('r3')}];
-    s2r.forEach((row,i)=>{
-      doc.setFontSize(8);
-      const rl=doc.splitTextToSize(row.r,c3-4);const dH2=Math.max(9,rl.length*4.3+4);
-      if(y+dH2>pH-fH-8){dF(doc,pn[0]);doc.addPage();pn[0]++;dH(doc);dF(doc,pn[0]);y=hH+10;}
-      doc.setFillColor(...(i%2===0?[255,255,255]:LG));doc.rect(tX,y,cW,dH2,'F');
-      doc.setDrawColor(...MG);doc.setLineWidth(0.15);
-      doc.line(tX+c1,y,tX+c1,y+dH2);doc.line(tX+c1+c2,y,tX+c1+c2,y+dH2);doc.rect(tX,y,cW,dH2);
-      doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...DK);
-      doc.text(row.o||'—',tX+2,y+5.5);doc.text(row.l||'—',tX+c1+2,y+5.5);
-      rl.forEach((ln,li)=>doc.text(ln,tX+c1+c2+2,y+5.5+li*4.3));y+=dH2;
-    });y+=7;
-
-    // S3 PEC table
-    if(y+35>pH-fH-8){dF(doc,pn[0]);doc.addPage();pn[0]++;dH(doc);dF(doc,pn[0]);y=hH+10;}
-    y=secH(doc,'3. Pre-Existing Condition (PEC) Assessment',y);
-    const pW2=54,pH2=cW-pW2;
-    doc.setFillColor(...T);doc.rect(tX,y,cW,rH,'F');
-    doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(255,255,255);
-    doc.text('Policy Duration',tX+2,y+4.5);doc.text('Assessment',tX+pW2+2,y+4.5);y+=rH;
-    [['Less than 1 year',g('pec1')],['1 - 2 years',g('pec2')],['More than 2 years',g('pec3')]].forEach(([k,v],i)=>{
-      const rl=doc.splitTextToSize(v,pH2-4);const dR=Math.max(9,rl.length*4.3+4);
-      doc.setFillColor(...(i%2===0?[255,255,255]:LG));doc.rect(tX,y,cW,dR,'F');
-      doc.setDrawColor(...MG);doc.line(tX+pW2,y,tX+pW2,y+dR);doc.rect(tX,y,cW,dR);
-      doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...DK);
-      doc.text(k,tX+2,y+5.5);rl.forEach((ln,li)=>doc.text(ln,tX+pW2+2,y+5.5+li*4.3));y+=dR;
-    });y+=7;
-
-    // S4 R&C - two mini tables side by side
-    if(y+38>pH-fH-8){dF(doc,pn[0]);doc.addPage();pn[0]++;dH(doc);dF(doc,pn[0]);y=hH+10;}
-    y=secH(doc,'4. Reasonable & Customary (R&C) Benchmark',y);
-    const hw=(cW-5)/2;
-    // Left table: TOSP+ranges
-    doc.setFillColor(...T);doc.rect(mL,y,hw,rH,'F');
-    doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(255,255,255);
-    doc.text('Item',mL+2,y+4);doc.text('Details',mL+40,y+4);y+=rH;
-    const rc=[['TOSP Code',g('tosp_code')],['Table of Surgery',g('tosp_table')],['Private Hospital',g('rc_private')],['Public Hospital',g('rc_public')]];
-    let yrL=y;
-    rc.forEach(([k,v],i)=>{
-      doc.setFillColor(...(i%2===0?[255,255,255]:LG));doc.rect(mL,yrL,hw,8,'F');
-      doc.setDrawColor(...MG);doc.setLineWidth(0.15);doc.line(mL+38,yrL,mL+38,yrL+8);doc.rect(mL,yrL,hw,8);
-      doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(...DK);
-      doc.text(k,mL+2,yrL+5.5);doc.text(v,mL+40,yrL+5.5);yrL+=8;
-    });
-    // Right table: percentiles
-    const rx=mL+hw+5;
-    doc.setFillColor(...T);doc.rect(rx,y,hw,rH,'F');
-    doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(255,255,255);
-    doc.text('Percentile',rx+2,y+4);doc.text('Estimate',rx+30,y+4);let yrR=y+rH;
-    [['P50',g('p50')],['P75',g('p75')],['P90',g('p90')]].forEach(([k,v],i)=>{
-      doc.setFillColor(...(i%2===0?[255,255,255]:LG));doc.rect(rx,yrR,hw,8,'F');
-      doc.setDrawColor(...MG);doc.line(rx+28,yrR,rx+28,yrR+8);doc.rect(rx,yrR,hw,8);
-      doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(...DK);
-      doc.text(k,rx+2,yrR+5.5);doc.text(v,rx+30,yrR+5.5);yrR+=8;
-    });
-    y=Math.max(yrL,yrR)+7;
-
-    // S5 LOG
-    if(y+22>pH-fH-8){dF(doc,pn[0]);doc.addPage();pn[0]++;dH(doc);dF(doc,pn[0]);y=hH+10;}
-    y=secH(doc,'5. Indicative LOG Recommendation',y);
-    doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(...DK);
-    y=wrap(doc,g('log_rec'),mL,y,cW);y+=8;
-
-    // Disclaimer
-    if(y+18>pH-fH-8){dF(doc,pn[0]);doc.addPage();pn[0]++;dH(doc);dF(doc,pn[0]);y=hH+10;}
-    doc.setDrawColor(...MG);doc.setLineWidth(0.35);doc.line(mL,y,pW-mR,y);y+=5;
-    doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(...O);doc.text('Disclaimer',mL,y);y+=4.5;
-    doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(110,120,130);
+    doc.setFont('helvetica','bold');doc.text('Disclaimer',mL,y);y+=6;
+    doc.setFontSize(8.5);doc.setFont('helvetica','normal');
     const disc='This pre-claim assessment is prepared for guidance only and does not guarantee coverage or claim payment. Final claim outcomes remain subject to insurer review of medical records, policy terms, benefit limits, exclusions, and the final hospital bill.';
-    y=wrap(doc,disc,mL,y,cW);
+    const dl=doc.splitTextToSize(disc,cW);doc.text(dl,mL,y);
 
-    const safe=(g('f_cond')).replace(/[^a-zA-Z0-9]/g,'_').slice(0,20);
-    doc.save(`PreClaim_${safe}_${disp.replace(/\s/g,'')}.pdf`);
+    doc.save(`PreClaim_${(g('f_cond')).replace(/[^a-z0-9]/gi,'_')}.pdf`);
     toast('✅ PDF downloaded!');
-  }catch(e){
-    console.error(e);
-    toast('⚠️ PDF failed — showing copy block.','var(--o)');
-    copyClient();
-  }
+  }catch(e){console.error(e);toast('❌ PDF Failed','var(--o)');}
+}
+
+function drawTbl(doc,data,cols,y){
+  const pH=297,mL=15;doc.setFontSize(8.5);
+  data.forEach((row,i)=>{
+    let maxH=0;const cellText=[];
+    row.forEach((c,j)=>{const t=doc.splitTextToSize(String(c||''),cols[j]-4);cellText.push(t);maxH=Math.max(maxH,t.length*4.2+4);});
+    if(y+maxH>pH-15){doc.addPage();y=20;}
+    if(i===0){doc.setFillColor(240);doc.rect(mL,y,cols.reduce((a,b)=>a+b),maxH,'F');doc.setFont('helvetica','bold');}
+    else doc.setFont('helvetica','normal');
+    let curX=mL;
+    cellText.forEach((t,j)=>{doc.rect(curX,y,cols[j],maxH);doc.text(t,curX+2,y+5);curX+=cols[j];});
+    y+=maxH;
+  });
+  return y;
 }
 
 function toast(msg,color='var(--t)'){
