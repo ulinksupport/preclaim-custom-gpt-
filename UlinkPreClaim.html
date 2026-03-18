@@ -528,8 +528,13 @@ async function generatePDF(){
     const doc=new jsPDF({unit:'mm',format:'a4'});
     const mL=15,mR=15,cW=210-mL-mR;
     const disp=formatDate(g('f_date'));
-    const U='______________________________________________________________';
-    let y=20;
+    // Header bar with logo
+    doc.setFillColor(60,170,170);doc.rect(0,0,210,22,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(255,255,255);
+    doc.text('Ulink Assist  |  Pre-Claim Assessment Report',mL,14);
+    if(logoB64){try{doc.addImage(logoB64,'PNG',210-38,1,20,20);}catch(_){}}
+    doc.setTextColor(60,60,60);
+    let y=32;
 
     doc.setFont('helvetica','bold');doc.setFontSize(14);doc.text('PRE-CLAIM ASSESSMENT SUMMARY',mL,y);y+=10;
     doc.setFontSize(10);doc.setFont('helvetica','normal');
@@ -538,6 +543,7 @@ async function generatePDF(){
     doc.text(`Procedure: ${g('f_proc')}`,mL,y);y+=6;
     doc.text(`Hospital: ${g('f_hosp')} ${g('f_hospType')}`,mL,y);y+=8;
     doc.text(U,mL,y);y+=10;
+
 
     doc.setFont('helvetica','bold');doc.text('1. General Exclusion Check',mL,y);y+=6;
     doc.setFont('helvetica','normal');const s1l=doc.splitTextToSize(g('s1'),cW);doc.text(s1l,mL,y);y+=s1l.length*5+5;doc.text(U,mL,y);y+=10;
