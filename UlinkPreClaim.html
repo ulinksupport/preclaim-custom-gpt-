@@ -257,10 +257,34 @@ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/p
 const T=[60,170,170],O=[220,90,30],DK=[60,60,60],LG=[235,238,242],MG=[200,208,218];
 let logoB64=null,uploadedFiles=[];
 
-// Key mgmt
-function saveKey(){const v=document.getElementById('apiKey').value.trim();localStorage.setItem('oai_k',v);updateKSt(v);}
-function loadKey(){const v=localStorage.getItem('oai_k')||'';document.getElementById('apiKey').value=v;updateKSt(v);}
-function updateKSt(v){const el=document.getElementById('kst');if(v&&v.startsWith('sk-')){el.textContent='✓ Saved';el.className='kst ok';}else{el.textContent='Not set';el.className='kst no';}}
+const SYS=`You are Ulink Pre-Claim Assessment AI.
+Analyse medical cases for Singapore insurance LOG requests. Use insurer-oriented logic. 
+Never provide medical advice. State that final outcome is subject to insurer review.
+
+EXTRACT: Patient name, diagnosis, procedure, hospital, laterality, opCode, TOSP table, estimated bill, length of stay.
+HOSPITAL TYPE: Private (MEH, MEN, Gleneagles, Raffles, Farrer Park, Mt Alvernia, Thomson, Crawfurd) or Government Restructured (SGH, TTSH, NUH, KTPH, CGH, SKH, NTFH). Default Private.
+TOSP: Map to closest MOH Table of Surgical Procedures.
+
+Return ONLY a valid JSON object:
+{
+  "date":"DD Month YYYY",
+  "patientName":"", "condition":"", "procedure":"", "hospital":"", "hospType":"(Singapore – Private/Government Hospital)",
+  "laterality":"", "opCode":"", "tosp_table":"", "estBill":"", "stayLength":"",
+  "s1":"1-2 sentence assessment",
+  "o1":"Medically Necessary", "l1":"70-90%", "r1":"",
+  "o2":"Borderline", "l2":"10-20%", "r2":"",
+  "o3":"Not Medically Necessary", "l3":"0-5%", "r3":"",
+  "pec1":"Assessment for <1 yr", "pec2":"Assessment for 1-2 yrs", "pec3":"Assessment for >2 yrs",
+  "tosp_code":"CODE - Procedure", "rc_private":"SGD X,XXX - X,XXX", "rc_public":"SGD X,XXX - X,XXX", "p50":"SGD X,XXX", "p75":"", "p90":"",
+  "log_rec":"One short sentence", 
+  "conf_clinical":"", "conf_procedure":"", "conf_cost":"", "conf_overall":"",
+  "email_subject":"Pre-Claim Assessment – [Condition/Procedure]",
+  "email_body":"Hi [Name],\\n\\nPlease find attached...\\n\\nAssessment is preliminary...\\n\\nRegards\\n[Sender]"
+}
+Return ONLY JSON.`;
+
+// Key mgmt (optional override)
+function loadKey(){const v=localStorage.getItem('oai_k')||'';const el=document.getElementById('oai_k');if(el)el.value=v;}
 loadKey();
 
 // Date
@@ -316,31 +340,6 @@ function removeFile(i){
 function clearFile(){uploadedFiles=[];fi.value='';document.getElementById('fileList').style.display='none';document.getElementById('fileList').innerHTML='';dz.style.display='block';}
 
 // Build messages
-const SYS=`You are Ulink Pre-Claim Assessment AI.
-Analyse medical cases for Singapore insurance LOG requests. Use insurer-oriented logic. 
-Never provide medical advice. State that final outcome is subject to insurer review.
-
-EXTRACT: Patient name, diagnosis, procedure, hospital, laterality, opCode, TOSP table, estimated bill, length of stay.
-HOSPITAL TYPE: Private (MEH, MEN, Gleneagles, Raffles, Farrer Park, Mt Alvernia, Thomson, Crawfurd) or Government Restructured (SGH, TTSH, NUH, KTPH, CGH, SKH, NTFH). Default Private.
-TOSP: Map to closest MOH Table of Surgical Procedures.
-
-Return ONLY a valid JSON object:
-{
-  "date":"DD Month YYYY",
-  "patientName":"", "condition":"", "procedure":"", "hospital":"", "hospType":"(Singapore – Private/Government Hospital)",
-  "laterality":"", "opCode":"", "tosp_table":"", "estBill":"", "stayLength":"",
-  "s1":"1-2 sentence assessment",
-  "o1":"Medically Necessary", "l1":"70-90%", "r1":"",
-  "o2":"Borderline", "l2":"10-20%", "r2":"",
-  "o3":"Not Medically Necessary", "l3":"0-5%", "r3":"",
-  "pec1":"Assessment for <1 yr", "pec2":"Assessment for 1-2 yrs", "pec3":"Assessment for >2 yrs",
-  "tosp_code":"CODE - Procedure", "rc_private":"SGD X,XXX - X,XXX", "rc_public":"SGD X,XXX - X,XXX", "p50":"SGD X,XXX", "p75":"", "p90":"",
-  "log_rec":"One short sentence", 
-  "conf_clinical":"", "conf_procedure":"", "conf_cost":"", "conf_overall":"",
-  "email_subject":"Pre-Claim Assessment – [Condition/Procedure]",
-  "email_body":"Hi [Name],\\n\\nPlease find attached...\\n\\nAssessment is preliminary...\\n\\nRegards\\n[Sender]"
-}
-Return ONLY JSON.`;
 
 async function buildContent(){
   if(uploadedFiles.length){
