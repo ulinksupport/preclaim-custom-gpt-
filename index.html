@@ -91,7 +91,7 @@ body{background:var(--bg);color:var(--tx);font-family:'Inter',sans-serif;min-hei
 </head>
 <body>
 
-<div class="sbar">
+<div class="sbar" style="display:none">
   <div class="field" style="flex:1"><label>OpenAI API Key (Optional)</label><input type="password" id="oai_k" placeholder="Leave blank to use permanent key" onchange="localStorage.setItem('oai_k',this.value.trim())"/></div>
   <span class="kst no" id="kst">Not set</span>
 </div>
