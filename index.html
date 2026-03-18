@@ -520,74 +520,151 @@ function copyBlock(){navigator.clipboard.writeText(document.getElementById('cpbl
 function formatDate(raw){if(!raw)return'—';try{const[y,m,d]=raw.split('-');const mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return`${parseInt(d)} ${mn[parseInt(m)-1]} ${y}`;}catch(_){return raw;}}
 
 // PDF generation
-// PDF generation (Simplified, matches copy-block)
+// PDF generation
 async function generatePDF(){
   try{
-    const{jsPDF}=window.jspdf;
-    const g=id=>(document.getElementById(id)?.value||'').trim()||'—';
-    const doc=new jsPDF({unit:'mm',format:'a4'});
-    const mL=15,mR=15,cW=210-mL-mR;
-    const disp=formatDate(g('f_date'));
-    // Header bar with logo
-    doc.setFillColor(60,170,170);doc.rect(0,0,210,22,'F');
-    doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(255,255,255);
+    if(!window.jspdf){toast('❌ PDF library not loaded','var(--o)');return;}
+    var jsPDF=window.jspdf.jsPDF;
+    var g=function(id){var el=document.getElementById(id);return(el&&el.value?el.value:'').trim()||'—';};
+    var doc=new jsPDF({unit:'mm',format:'a4'});
+    var mL=15,cW=180;
+    var disp=formatDate(g('f_date'));
+    var UL='______________________________________________';
+
+    // ── Teal header bar ──
+    doc.setFillColor(60,170,170);
+    doc.rect(0,0,210,22,'F');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(11);
+    doc.setTextColor(255,255,255);
     doc.text('Ulink Assist  |  Pre-Claim Assessment Report',mL,14);
-    if(logoB64){try{doc.addImage(logoB64,'PNG',210-38,1,20,20);}catch(_){}}
-    doc.setTextColor(60,60,60);
-    let y=32;
-    const U='______________________________________________________________';
-    doc.setFont('helvetica','bold');doc.setFontSize(14);doc.text('PRE-CLAIM ASSESSMENT SUMMARY',mL,y);y+=10;
-    doc.setFontSize(10);doc.setFont('helvetica','normal');
-    doc.text(`Date: ${disp}`,mL,y);y+=6;
-    doc.text(`Condition: ${g('f_cond')}`,mL,y);y+=6;
-    doc.text(`Procedure: ${g('f_proc')}`,mL,y);y+=6;
-    doc.text(`Hospital: ${g('f_hosp')} ${g('f_hospType')}`,mL,y);y+=8;
-    doc.text(U,mL,y);y+=10;
+    if(logoB64){try{doc.addImage(logoB64,'PNG',172,1,20,20);}catch(le){console.warn('Logo error',le);}}
+    doc.setTextColor(40,40,40);
 
+    var y=30;
 
-    doc.setFont('helvetica','bold');doc.text('1. General Exclusion Check',mL,y);y+=6;
-    doc.setFont('helvetica','normal');const s1l=doc.splitTextToSize(g('s1'),cW);doc.text(s1l,mL,y);y+=s1l.length*5+5;doc.text(U,mL,y);y+=10;
+    // ── Title ──
+    doc.setFont('helvetica','bold');doc.setFontSize(13);
+    doc.text('PRE-CLAIM ASSESSMENT SUMMARY',mL,y);y+=8;
+    doc.setFont('helvetica','normal');doc.setFontSize(9.5);
+    doc.text('Date: '+disp,mL,y);y+=5.5;
+    doc.text('Condition: '+g('f_cond'),mL,y);y+=5.5;
+    doc.text('Procedure: '+g('f_proc'),mL,y);y+=5.5;
+    doc.text('Hospital: '+g('f_hosp')+' '+g('f_hospType'),mL,y);y+=7;
+    doc.text(UL,mL,y);y+=8;
 
-    doc.setFont('helvetica','bold');doc.text('2. Medical Necessity Assessment',mL,y);y+=8;
-    const s2=[['Outcome','Likelihood','Reasoning'],['Medically Necessary',g('l1'),g('r1')],['Borderline',g('l2'),g('r2')],['Not Necessary','<5%',g('r3')]];
-    y=drawTbl(doc,s2,[45,30,cW-75],y);y+=5;doc.text(U,mL,y);y+=10;
+    // ── Section 1 ──
+    doc.setFont('helvetica','bold');doc.setFontSize(10);
+    doc.text('1. General Exclusion Check',mL,y);y+=6;
+    doc.setFont('helvetica','normal');doc.setFontSize(9);
+    var s1lines=doc.splitTextToSize(g('s1'),cW);
+    doc.text(s1lines,mL,y);y+=s1lines.length*5+5;
+    doc.text(UL,mL,y);y+=8;
 
-    doc.setFont('helvetica','bold');doc.text('3. Pre-Existing Condition (PEC) Assessment',mL,y);y+=8;
-    const s3=[['Policy Duration','PEC Assessment'],['Less than 1 year',g('pec1')],['1 - 2 years',g('pec2')],['More than 2 years',g('pec3')]];
-    y=drawTbl(doc,s3,[45,cW-45],y);y+=5;doc.text(U,mL,y);y+=10;
+    // ── Section 2 ──
+    doc.setFont('helvetica','bold');doc.setFontSize(10);
+    doc.text('2. Medical Necessity Assessment',mL,y);y+=7;
+    var s2=[['Outcome','Likelihood','Reasoning'],
+      ['Medically Necessary',g('l1'),g('r1')],
+      ['Borderline',g('l2'),g('r2')],
+      ['Not Medically Necessary','<5%',g('r3')]];
+    y=pdfTable(doc,s2,[50,28,cW-78],mL,y);y+=4;
+    doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.text(UL,mL,y);y+=8;
 
-    doc.setFont('helvetica','bold');doc.text('4. Reasonable & Customary (R&C) Benchmark',mL,y);y+=8;
-    const s4=[['Item','Details'],['TOSP Code',g('tosp_code')],['Table of Surgery',g('tosp_table')],['Private Hospital',g('rc_private')],['Public Hospital',g('rc_public')]];
-    y=drawTbl(doc,s4,[45,cW-45],y);y+=8;
-    doc.text('Estimated Cost Percentiles',mL,y);y+=6;
-    const s4p=[['Percentile','Estimate'],['P50',g('p50')],['P75',g('p75')],['P90',g('p90')]];
-    y=drawTbl(doc,s4p,[45,cW-45],y);y+=5;doc.text(U,mL,y);y+=10;
+    // ── Section 3 ──
+    doc.setFont('helvetica','bold');doc.setFontSize(10);
+    doc.text('3. Pre-Existing Condition (PEC) Assessment',mL,y);y+=7;
+    var s3=[['Policy Duration','PEC Assessment'],
+      ['Less than 1 year',g('pec1')],
+      ['1 - 2 years',g('pec2')],
+      ['More than 2 years',g('pec3')]];
+    y=pdfTable(doc,s3,[45,cW-45],mL,y);y+=4;
+    doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.text(UL,mL,y);y+=8;
 
-    doc.setFont('helvetica','bold');doc.text('5. Indicative LOG Recommendation',mL,y);y+=6;
-    doc.setFont('helvetica','normal');doc.text(g('log_rec'),mL,y);y+=10;doc.text(U,mL,y);y+=10;
+    // ── Section 4 ──
+    doc.setFont('helvetica','bold');doc.setFontSize(10);
+    doc.text('4. Reasonable & Customary (R&C) Benchmark',mL,y);y+=7;
+    var s4=[['Item','Details'],
+      ['TOSP Code',g('tosp_code')],
+      ['Table of Surgery',g('tosp_table')],
+      ['Private Hospital',g('rc_private')],
+      ['Public Hospital',g('rc_public')]];
+    y=pdfTable(doc,s4,[50,cW-50],mL,y);y+=5;
+    doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.text('Estimated Cost Percentiles:',mL,y);y+=6;
+    var s4p=[['Percentile','Estimate'],['P50',g('p50')],['P75',g('p75')],['P90',g('p90')]];
+    y=pdfTable(doc,s4p,[35,cW-35],mL,y);y+=4;
+    doc.text(UL,mL,y);y+=8;
 
-    doc.setFont('helvetica','bold');doc.text('Disclaimer',mL,y);y+=6;
-    doc.setFontSize(8.5);doc.setFont('helvetica','normal');
-    const disc='This pre-claim assessment is prepared for guidance only and does not guarantee coverage or claim payment. Final claim outcomes remain subject to insurer review of medical records, policy terms, benefit limits, exclusions, and the final hospital bill.';
-    const dl=doc.splitTextToSize(disc,cW);doc.text(dl,mL,y);
+    // ── Section 5 ──
+    doc.setFont('helvetica','bold');doc.setFontSize(10);
+    doc.text('5. Indicative LOG Recommendation',mL,y);y+=6;
+    doc.setFont('helvetica','normal');doc.setFontSize(9);
+    var logrec=doc.splitTextToSize(g('log_rec'),cW);
+    doc.text(logrec,mL,y);y+=logrec.length*5+5;
+    doc.text(UL,mL,y);y+=8;
 
-    doc.save(`PreClaim_${(g('f_cond')).replace(/[^a-z0-9]/gi,'_')}.pdf`);
+    // ── Disclaimer ──
+    doc.setFont('helvetica','bold');doc.setFontSize(9);
+    doc.text('Disclaimer',mL,y);y+=5;
+    doc.setFont('helvetica','normal');doc.setFontSize(8);
+    var disc='This pre-claim assessment is for guidance only and does not guarantee coverage or claim payment. Final outcomes remain subject to insurer review.';
+    var discLines=doc.splitTextToSize(disc,cW);
+    doc.text(discLines,mL,y);
+
+    // ── Footer ──
+    var pages=doc.getNumberOfPages();
+    for(var p=1;p<=pages;p++){
+      doc.setPage(p);
+      doc.setFillColor(60,170,170);doc.rect(0,284,210,13,'F');
+      doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(255,255,255);
+      doc.text('Ulink Assist Pre-Claim Assessment  |  www.ulinkassist.com',mL,292);
+      doc.text('Page '+p+' of '+pages,195,292,{align:'right'});
+    }
+
+    var fname='PreClaim_'+g('f_cond').replace(/[^a-zA-Z0-9]/g,'_').slice(0,20)+'.pdf';
+    doc.save(fname);
     toast('✅ PDF downloaded!');
-  }catch(e){console.error(e);toast('❌ PDF Failed','var(--o)');}
+  }catch(e){
+    console.error('PDF error:',e);
+    toast('❌ PDF Failed: '+e.message,'var(--o)');
+  }
 }
 
-function drawTbl(doc,data,cols,y){
-  const pH=297,mL=15;doc.setFontSize(8.5);
-  data.forEach((row,i)=>{
-    let maxH=0;const cellText=[];
-    row.forEach((c,j)=>{const t=doc.splitTextToSize(String(c||''),cols[j]-4);cellText.push(t);maxH=Math.max(maxH,t.length*4.2+4);});
-    if(y+maxH>pH-15){doc.addPage();y=20;}
-    if(i===0){doc.setFillColor(240);doc.rect(mL,y,cols.reduce((a,b)=>a+b),maxH,'F');doc.setFont('helvetica','bold');}
-    else doc.setFont('helvetica','normal');
-    let curX=mL;
-    cellText.forEach((t,j)=>{doc.rect(curX,y,cols[j],maxH);doc.text(t,curX+2,y+5);curX+=cols[j];});
-    y+=maxH;
-  });
+function pdfTable(doc,data,cols,x,y){
+  var totalW=cols.reduce(function(a,b){return a+b;},0);
+  doc.setFontSize(8.5);
+  for(var i=0;i<data.length;i++){
+    var row=data[i];
+    var cellLines=[];
+    var rowH=8;
+    for(var j=0;j<row.length;j++){
+      var t=doc.splitTextToSize(String(row[j]||''),cols[j]-4);
+      cellLines.push(t);
+      rowH=Math.max(rowH,t.length*4.5+4);
+    }
+    if(y+rowH>282){doc.addPage();y=20;}
+    if(i===0){
+      doc.setFillColor(220,235,235);
+      doc.rect(x,y,totalW,rowH,'F');
+      doc.setFont('helvetica','bold');
+    }else{
+      doc.setFillColor(i%2===0?248:255,i%2===0?248:255,i%2===0?248:255);
+      doc.rect(x,y,totalW,rowH,'F');
+      doc.setFont('helvetica','normal');
+    }
+    doc.setDrawColor(180,200,200);doc.setLineWidth(0.2);
+    doc.rect(x,y,totalW,rowH);
+    var cx=x;
+    for(var k=0;k<cellLines.length;k++){
+      if(k>0)doc.line(cx,y,cx,y+rowH);
+      doc.text(cellLines[k],cx+2,y+5.5);
+      cx+=cols[k];
+    }
+    y+=rowH;
+  }
   return y;
 }
 
