@@ -72,6 +72,36 @@ app.post('/proxy-analyse', async (req, res) => {
   }
 });
 
+// ── Proxy endpoint to amend existing results ──
+app.post('/proxy-amend', async (req, res) => {
+  const { currentData, instruction } = req.body;
+  if (!currentData || !instruction) return res.status(400).json({ error: 'Missing data or instruction.' });
+
+  try {
+    const prompt = `Here is the current structured data for a pre-claim assessment:
+${JSON.stringify(currentData, null, 2)}
+
+The user has requested the following amendment:
+"${instruction}"
+
+Please apply these amendments to the data. Keep the exact same JSON format and keys. ONLY return the updated JSON.`;
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      temperature: 0.1,
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: prompt }
+      ]
+    });
+    
+    res.json(parseAIResponse(completion.choices[0].message.content));
+  } catch (err) {
+    console.error('Amend error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ══════════════════════════════════════════════
 //  ANALYSE PDF — extract text → GPT-4o
 // ══════════════════════════════════════════════

@@ -225,6 +225,20 @@ body{background:var(--bg);color:var(--tx);font-family:'Inter',sans-serif;min-hei
       <div class="field"><label>Body</label><textarea id="email_body" rows="8"></textarea></div>
     </div>
 
+    <!-- AI AMENDMENT SECTION -->
+    <div class="card" style="border:1px solid var(--p); background:var(--bg)">
+      <div class="ch" style="margin-bottom:8px">
+        <div class="ct" style="color:var(--p)">✏️ Ask AI to Amend Results <span id="b_amend"></span></div>
+      </div>
+      <div class="field">
+        <textarea id="amend_inst" rows="2" placeholder="e.g., Change hospital to Gleneagles and increase bill to $5,000..."></textarea>
+      </div>
+      <button class="btn-out" style="width:100%; border-color:var(--p); color:var(--p); margin-top:8px" onclick="amendDoc()">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.8 1 6.5 2.6L21 8M21 3v5h-5"/></svg>
+        Regenerate Assessment
+      </button>
+    </div>
+
     <!-- ACTION BUTTONS -->
     <div class="act-row">
       <button class="btn-big btn-teal" onclick="generatePDF()" style="margin-top:0">
@@ -420,6 +434,53 @@ async function analyseDoc(){
     setLd(false);
     toast('✅ Assessment complete!');
   }catch(e){setLd(false);toast('❌ '+(e.message||'Failed'),'var(--o)');console.error(e);}
+}
+
+async function amendDoc(){
+  const inst = document.getElementById('amend_inst').value.trim();
+  if(!inst) { toast('⚠️ Please enter an instruction for the AI (e.g., Change hospital to Mount Elizabeth)','var(--o)'); return; }
+
+  // Gather current form state
+  const currentData = {
+    patientName: document.getElementById('name').value,
+    diagnosis: document.getElementById('f_cond').value,
+    procedure: document.getElementById('f_proc').value,
+    hospital: document.getElementById('f_hosp').value,
+    hospitalType: document.getElementById('f_hospType').value,
+    generalExclusionsChecked: document.getElementById('s1').value,
+    medicallyNecessary: { likelihood: document.getElementById('l1').value, reasoning: document.getElementById('r1').value },
+    borderline: { likelihood: document.getElementById('l2').value, reasoning: document.getElementById('r2').value },
+    notMedicallyNecessary: { reasoning: document.getElementById('r3').value },
+    pec: { lessThan1Yr: document.getElementById('pec1').value, oneToTwoYrs: document.getElementById('pec2').value, moreThan2Yrs: document.getElementById('pec3').value },
+    rnC: { tospCode: document.getElementById('tosp_code').value, tableOfSurgery: document.getElementById('tosp_table').value, privateHospitalRange: document.getElementById('rc_private').value, publicHospitalRange: document.getElementById('rc_public').value, p50: document.getElementById('p50').value, p75: document.getElementById('p75').value, p90: document.getElementById('p90').value },
+    logRecommendation: document.getElementById('log_rec').value,
+    emailDraft: { subject: document.getElementById('email_sub').value, body: document.getElementById('email_body').value }
+  };
+
+  const btn = document.getElementById('b_amend');
+  btn.innerHTML = '<span class="loading-spinner" style="display:inline-block;width:12px;height:12px;border:2px solid var(--p);border-top:2px solid transparent;border-radius:50%;animation:su .6s linear infinite;margin-left:5px;vertical-align:middle;"></span>';
+  toast('Working on amendments...','var(--p)');
+
+  try {
+    const res = await fetch('https://preclaim-custom-gpt.onrender.com/proxy-amend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentData, instruction: inst })
+    });
+    
+    if(!res.ok) throw new Error('Failed to reach backend proxy.');
+    
+    const amendedData = await res.json();
+    fillForm(amendedData);
+    document.getElementById('amend_inst').value = '';
+    toast('✅ Form updated with your amendments!');
+    
+  } catch (e) {
+    toast('❌ ' + (e.message || 'Failed to amend'), 'var(--o)');
+    console.error('Amend Error:', e);
+  } finally {
+    btn.innerHTML = '';
+  }
 }
 
 function setLd(on,title='',sub=''){
