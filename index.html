@@ -531,28 +531,29 @@ async function generatePDF(){
     var disp=formatDate(g('f_date'));
     var UL='______________________________________________';
 
-    // ── Thin muted teal header bar (full width, no dark bar) ──
-    doc.setFillColor(111,175,179);       // #6FAFB3 muted teal
+    // ── Full-width muted teal header bar — nothing overlaps it ──
+    doc.setFillColor(111,175,179);       // #6FAFB3
     doc.rect(0,0,210,14,'F');
 
-    // ── Circular logo badge (light teal #CFE5E6), right-aligned, layered above content ──
+    doc.setTextColor(40,40,40);
+    var y=20;
+
+    // ── Logo: right-aligned in content area BELOW the header bar ──
     if(logoB64){
       try{
-        doc.setFillColor(207,229,230);   // #CFE5E6
-        doc.circle(193,18,13,'F');
-        doc.addImage(logoB64,'PNG',180,5,26,26);
+        doc.setFillColor(207,229,230);   // light teal #CFE5E6
+        doc.circle(192,y+10,13,'F');
+        doc.addImage(logoB64,'PNG',179,y,26,26);
       }catch(le){console.warn('Logo error',le);}
     }
 
-    doc.setTextColor(40,40,40);
-    var y=22;
-
-    // ── Orange bold title ──
+    // ── Orange bold title (left side, constrained width) ──
     doc.setFont('helvetica','bold');doc.setFontSize(14);
     doc.setTextColor(224,123,57);        // #E07B39
-    doc.text('PRE-CLAIM ASSESSMENT SUMMARY',mL,y);y+=9;
+    doc.text('PRE-CLAIM ASSESSMENT SUMMARY',mL,y+5);
 
     // ── Case metadata ──
+    y=y+28;
     doc.setFont('helvetica','normal');doc.setFontSize(9.5);
     doc.setTextColor(50,50,50);
     doc.text('Date: '+disp,mL,y);y+=5.5;
