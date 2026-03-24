@@ -531,17 +531,26 @@ async function generatePDF(){
     var disp=formatDate(g('f_date'));
     var UL='______________________________________________';
 
-    // ── Teal header bar ──
-    doc.setFillColor(60,170,170);
-    doc.rect(0,0,210,22,'F');
-    doc.setFont('helvetica','bold');
-    doc.setFontSize(11);
+    // ── Header: Dark charcoal bar (matches reference) ──
+    doc.setFillColor(45,45,50);          // dark charcoal
+    doc.rect(0,0,210,18,'F');
+    doc.setFillColor(60,170,170);        // teal accent line below
+    doc.rect(0,18,210,3,'F');
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(8);
     doc.setTextColor(255,255,255);
-    doc.text('Ulink Assist  |  Pre-Claim Assessment Report',mL,14);
-    if(logoB64){try{doc.addImage(logoB64,'PNG',172,1,20,20);}catch(le){console.warn('Logo error',le);}}
+    doc.text('Pre-Claim Assessment Report',mL,12);
+    // Logo top-right corner (oval logo on white circle background)
+    if(logoB64){
+      try{
+        doc.setFillColor(255,255,255);
+        doc.circle(195,11,9,'F');
+        doc.addImage(logoB64,'PNG',186,2,18,18);
+      }catch(le){console.warn('Logo error',le);}
+    }
     doc.setTextColor(40,40,40);
 
-    var y=30;
+    var y=28;
 
     // ── Title ──
     doc.setFont('helvetica','bold');doc.setFontSize(13);
