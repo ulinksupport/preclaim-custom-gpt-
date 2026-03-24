@@ -531,22 +531,26 @@ async function generatePDF(){
     var disp=formatDate(g('f_date'));
     var UL='______________________________________________';
 
-    // ── Header: thin muted teal bar (matches reference) ──
-    doc.setFillColor(111,175,179);       // muted teal #6FAFB3
-    doc.rect(0,0,210,16,'F');
+    // ── 1. Dark charcoal rounded header bar (drawn first) ──
+    doc.setFillColor(50,50,55);
+    doc.roundedRect(0,0,210,16,3,3,'F');
 
-    // Label text inside the header bar
+    // ── 2. Thin muted teal accent stripe (drawn second, below bar) ──
+    doc.setFillColor(111,175,179);       // #6FAFB3
+    doc.rect(0,14,210,5,'F');
+
+    // ── 3. Header label text ──
     doc.setFont('helvetica','normal');
     doc.setFontSize(8.5);
     doc.setTextColor(255,255,255);
     doc.text('Pre-Claim Assessment Report',mL,10.5);
 
-    // Logo in light teal circle (#CFE5E6) top-right
+    // ── 4. Logo drawn LAST so it appears on top of both layers ──
     if(logoB64){
       try{
-        doc.setFillColor(207,229,230);   // light teal #CFE5E6
-        doc.circle(197,11,10,'F');
-        doc.addImage(logoB64,'PNG',187,1,20,20);
+        doc.setFillColor(207,229,230);   // light teal circle #CFE5E6
+        doc.circle(193,13,11,'F');
+        doc.addImage(logoB64,'PNG',182,2,22,22);
       }catch(le){console.warn('Logo error',le);}
     }
     doc.setTextColor(40,40,40);
@@ -555,10 +559,10 @@ async function generatePDF(){
 
     // ── Title in orange (#E07B39) ──
     doc.setFont('helvetica','bold');doc.setFontSize(14);
-    doc.setTextColor(224,123,57);        // orange #E07B39
+    doc.setTextColor(224,123,57);
     doc.text('PRE-CLAIM ASSESSMENT SUMMARY',mL,y);y+=9;
 
-    // Case metadata in dark grey
+    // Case metadata
     doc.setFont('helvetica','normal');doc.setFontSize(9.5);
     doc.setTextColor(50,50,50);
     doc.text('Date: '+disp,mL,y);y+=5.5;
