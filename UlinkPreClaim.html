@@ -531,31 +531,36 @@ async function generatePDF(){
     var disp=formatDate(g('f_date'));
     var UL='______________________________________________';
 
-    // ── Header: Dark charcoal bar (matches reference) ──
-    doc.setFillColor(45,45,50);          // dark charcoal
-    doc.rect(0,0,210,18,'F');
-    doc.setFillColor(60,170,170);        // teal accent line below
-    doc.rect(0,18,210,3,'F');
+    // ── Header: thin muted teal bar (matches reference) ──
+    doc.setFillColor(111,175,179);       // muted teal #6FAFB3
+    doc.rect(0,0,210,16,'F');
+
+    // Label text inside the header bar
     doc.setFont('helvetica','normal');
-    doc.setFontSize(8);
+    doc.setFontSize(8.5);
     doc.setTextColor(255,255,255);
-    doc.text('Pre-Claim Assessment Report',mL,12);
-    // Logo top-right corner (oval logo on white circle background)
+    doc.text('Pre-Claim Assessment Report',mL,10.5);
+
+    // Logo in light teal circle (#CFE5E6) top-right
     if(logoB64){
       try{
-        doc.setFillColor(255,255,255);
-        doc.circle(195,11,9,'F');
-        doc.addImage(logoB64,'PNG',186,2,18,18);
+        doc.setFillColor(207,229,230);   // light teal #CFE5E6
+        doc.circle(197,11,10,'F');
+        doc.addImage(logoB64,'PNG',187,1,20,20);
       }catch(le){console.warn('Logo error',le);}
     }
     doc.setTextColor(40,40,40);
 
-    var y=28;
+    var y=26;
 
-    // ── Title ──
-    doc.setFont('helvetica','bold');doc.setFontSize(13);
-    doc.text('PRE-CLAIM ASSESSMENT SUMMARY',mL,y);y+=8;
+    // ── Title in orange (#E07B39) ──
+    doc.setFont('helvetica','bold');doc.setFontSize(14);
+    doc.setTextColor(224,123,57);        // orange #E07B39
+    doc.text('PRE-CLAIM ASSESSMENT SUMMARY',mL,y);y+=9;
+
+    // Case metadata in dark grey
     doc.setFont('helvetica','normal');doc.setFontSize(9.5);
+    doc.setTextColor(50,50,50);
     doc.text('Date: '+disp,mL,y);y+=5.5;
     doc.text('Condition: '+g('f_cond'),mL,y);y+=5.5;
     doc.text('Procedure: '+g('f_proc'),mL,y);y+=5.5;
