@@ -12,15 +12,15 @@ const port = process.env.PORT || 3000;
 // ── OpenAI client ──
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// ── CORS — allow your Render frontend ──
-app.use(cors({
-  origin: [
-    'https://preclaim-custom-gpt.onrender.com',
-    'http://localhost',
-    'http://127.0.0.1',
-    /\.onrender\.com$/
-  ]
-}));
+// ── CORS — open to all origins (supports iframe embedding) ──
+app.use(cors({ origin: '*', methods: ['GET','POST','OPTIONS'], allowedHeaders: ['Content-Type','Authorization'] }));
+
+// ── Iframe-friendly headers ──
+app.use((req, res, next) => {
+  res.setHeader('X-Frame-Options', 'ALLOWALL');          // allow any parent iframe
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  next();
+});
 
 // ── File upload (memory storage — no disk writes needed) ──
 const upload = multer({
