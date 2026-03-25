@@ -419,11 +419,17 @@ async function analyseDoc(){
       });
       if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'API error '+res.status);}
       const j=await res.json();
-      const raw=j.choices?.[0]?.message?.content||'';
-      let t=raw.trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
-      const s=t.indexOf('{'),en=t.lastIndexOf('}');
-      if(s!==-1&&en!==-1)t=t.slice(s,en+1);
-      d=JSON.parse(t);
+      if(j.choices){
+        // Direct OpenAI response format — parse the raw text
+        const raw=j.choices?.[0]?.message?.content||'';
+        let t=raw.trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
+        const s=t.indexOf('{'),en=t.lastIndexOf('}');
+        if(s!==-1&&en!==-1)t=t.slice(s,en+1);
+        d=JSON.parse(t);
+      } else {
+        // Backend proxy already returned parsed JSON — use directly
+        d=j;
+      }
     }
     
     setLd(true,'Populating assessment…','Auto-filling all sections…');
