@@ -12,13 +12,13 @@ const port = process.env.PORT || 3000;
 // ── OpenAI client ──
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// ── CORS — open to all origins (supports iframe embedding) ──
-app.use(cors({ origin: '*', methods: ['GET','POST','OPTIONS'], allowedHeaders: ['Content-Type','Authorization'] }));
-
-// ── Iframe-friendly headers ──
+// ── CORS & iframe headers (single source of truth) ──
 app.use((req, res, next) => {
-  res.setHeader('X-Frame-Options', 'ALLOWALL');          // allow any parent iframe
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('X-Frame-Options', 'ALLOWALL');
+  if (req.method === 'OPTIONS') return res.sendStatus(204); // preflight
   next();
 });
 
