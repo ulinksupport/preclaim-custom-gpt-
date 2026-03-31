@@ -22,6 +22,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// ── Parse JSON bodies ──
+app.use(express.json({ limit: '50mb' }));
+
 // ── File upload (memory storage — no disk writes needed) ──
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -33,8 +36,11 @@ const upload = multer({
   }
 });
 
+// ── Serve Static Frontend (index.html) ──
+app.use(express.static(path.join(__dirname, '..')));
+
 // ── Health check ──
-app.get('/', (req, res) => {
+app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'Ulink Pre-Claim AI Backend' });
 });
 
@@ -55,7 +61,6 @@ app.post('/analyse', upload.single('file'), async (req, res) => {
 });
 
 // ── Proxy endpoint for pre-built content ──
-app.use(express.json({ limit: '50mb' }));
 app.post('/proxy-analyse', async (req, res) => {
   const { content } = req.body;
   if (!content) return res.status(400).json({ error: 'No content provided.' });
