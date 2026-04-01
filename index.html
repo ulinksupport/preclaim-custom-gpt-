@@ -285,9 +285,9 @@ Return ONLY a valid JSON object:
   "patientName":"", "condition":"", "procedure":"", "hospital":"", "hospType":"(Singapore – Private/Government Hospital)",
   "laterality":"", "opCode":"", "tosp_table":"", "estBill":"", "stayLength":"",
   "s1":"1-2 sentence assessment",
-  "o1":"Medically Necessary", "l1":"70-90%", "r1":"",
-  "o2":"Borderline", "l2":"10-20%", "r2":"",
-  "o3":"Not Medically Necessary", "l3":"0-5%", "r3":"",
+  "o1":"Medically Necessary", "l1":"70-90%", "r1":"1 sentence reasoning",
+  "o2":"Borderline", "l2":"10-20%", "r2":"1 sentence reasoning",
+  "o3":"Not Medically Necessary", "l3":"0-5%", "r3":"1 sentence reasoning",
   "pec1":"Assessment for <1 yr", "pec2":"Assessment for 1-2 yrs", "pec3":"Assessment for >2 yrs",
   "tosp_code":"CODE - Procedure", "rc_private":"SGD X,XXX - X,XXX", "rc_public":"SGD X,XXX - X,XXX", "p50":"SGD X,XXX", "p75":"", "p90":"",
   "log_rec":"One short sentence", 
@@ -402,7 +402,7 @@ async function analyseDoc(){
     let d;
     if(usePrx){
       // Use Backend Proxy (Permanent Key)
-      const res=await fetch('https://preclaim-custom-gpt.onrender.com/proxy-analyse',{
+      const res=await fetch('/proxy-analyse',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({content})
@@ -468,7 +468,7 @@ async function amendDoc(){
   toast('Working on amendments...','var(--p)');
 
   try {
-    const res = await fetch('https://preclaim-custom-gpt.onrender.com/proxy-amend', {
+    const res = await fetch('/proxy-amend', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ currentData, instruction: inst })
