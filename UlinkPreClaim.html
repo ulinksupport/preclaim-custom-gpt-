@@ -279,6 +279,14 @@ EXTRACT: Patient name, diagnosis, procedure, hospital, laterality, opCode, TOSP 
 HOSPITAL TYPE: Private (MEH, MEN, Gleneagles, Raffles, Farrer Park, Mt Alvernia, Thomson, Crawfurd) or Government Restructured (SGH, TTSH, NUH, KTPH, CGH, SKH, NTFH). Default Private.
 TOSP: Map to closest MOH Table of Surgical Procedures.
 
+LOG RECOMMENDATION RULE (CRITICAL):
+- MUST be derived from R&C Benchmark values
+- MUST include SGD numeric range
+- MUST reference percentile (P50/P75/P90)
+- MUST NOT be generic (e.g. "proceed with claim")
+- MUST be 1–3 lines
+- MUST differ based on hospital type
+
 Return ONLY a valid JSON object:
 {
   "date":"DD Month YYYY",
@@ -290,7 +298,7 @@ Return ONLY a valid JSON object:
   "o3":"Not Medically Necessary", "l3":"0-5%", "r3":"1 sentence reasoning",
   "pec1":"Assessment for <1 yr", "pec2":"Assessment for 1-2 yrs", "pec3":"Assessment for >2 yrs",
   "tosp_code":"CODE - Procedure", "rc_private":"SGD X,XXX - X,XXX", "rc_public":"SGD X,XXX - X,XXX", "p50":"SGD X,XXX", "p75":"", "p90":"",
-  "log_rec":"One short sentence", 
+  "log_rec":"Provide a 1–3 line detailed LOG recommendation STRICTLY based on the R&C Benchmark. Must include SGD range and reference rc_private/rc_public and percentiles. No generic statements allowed.", 
   "conf_clinical":"", "conf_procedure":"", "conf_cost":"", "conf_overall":"",
   "email_subject":"Pre-Claim Assessment – [Condition/Procedure]",
   "email_body":"Hi [Name],\\n\\nPlease find attached...\\n\\nAssessment is preliminary...\\n\\nRegards\\n[Sender]"
