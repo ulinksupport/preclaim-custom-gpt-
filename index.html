@@ -380,7 +380,29 @@ async function buildContent(){
   return`Analyse this case:\nCondition: ${c||'Unknown'}\nProcedure: ${p||'Unknown'}\nHospital: ${h||'Unknown'}`;
 }
 
-function fileToB64(f){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=e=>res(e.target.result);fr.onerror=rej;fr.readAsDataURL(f);});}
+function fileToB64(f){
+  return new Promise((res,rej)=>{
+    const fr=new FileReader();
+    fr.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const cvs=document.createElement('canvas');
+        let w=img.width, h=img.height;
+        const max=1200;
+        if(w>h && w>max){ h*=max/w; w=max; }
+        else if(h>max){ w*=max/h; h=max; }
+        cvs.width=w; cvs.height=h;
+        const ctx=cvs.getContext('2d');
+        ctx.drawImage(img,0,0,w,h);
+        res(cvs.toDataURL('image/jpeg',0.8));
+      };
+      img.onerror=rej;
+      img.src=e.target.result;
+    };
+    fr.onerror=rej;
+    fr.readAsDataURL(f);
+  });
+}
 
 async function extractPDF(f){
   const ab=await f.arrayBuffer();
@@ -402,13 +424,23 @@ async function analyseDoc(){
     let d;
     if(usePrx){
       // Use Backend Proxy (Permanent Key)
-      const res=await fetch('/proxy-analyse',{
+      const res=await fetch('https://ulink.app.n8n.cloud/webhook/file-analysis-simple',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({content})
       });
       if(!res.ok) throw new Error('Backend busy or key missing on server');
-      d=await res.json();
+      let j=await res.json();
+      if(Array.isArray(j)) j = j[0]; 
+      if(j.choices){
+        const raw=j.choices?.[0]?.message?.content||'';
+        let t=raw.trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
+        const s=t.indexOf('{'),en=t.lastIndexOf('}');
+        if(s!==-1&&en!==-1)t=t.slice(s,en+1);
+        d=JSON.parse(t);
+      } else {
+        d=j;
+      }
     } else {
       // Use User's own key
       const messages=[{role:'system',content:SYS},{role:'user',content:content}];
@@ -418,7 +450,9 @@ async function analyseDoc(){
         body:JSON.stringify({model:'gpt-4o',temperature:0.2,max_tokens:2500,messages})
       });
       if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'API error '+res.status);}
-      const j=await res.json();
+      let j=await res.json();
+      if(Array.isArray(j)) j = j[0]; // Handle n8n array wrapper
+      
       if(j.choices){
         // Direct OpenAI response format — parse the raw text
         const raw=j.choices?.[0]?.message?.content||'';
